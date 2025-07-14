@@ -1,9 +1,9 @@
-  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
 import { PhysicsWorld } from '../physics.js';
 import { createStaticCube, createFallingCube, loadOBJModel } from '../objects.js';
 import { createDetectionBox } from '../detection.js';
 import { showHitbox, showDetectionBoxHelper } from '../debugtool.js';
-import { moveDetectedObject, updateDetectedObjectsMovement, stopMovingObject } from '../action_objects/conv.js';
+import { moveDetectedObject, updateDetectedObjectsMovement, stopMovingObject, meshToBodyMap } from '../action_objects/conv.js';
 
 export const movingObjectsMap = new Map();
 
@@ -28,6 +28,9 @@ export class Scene1
 
     // pole pre všetky detection boxy, každý s vlastnými sledovanými objektmi a callbackmi
     this.detectionBoxes = [];
+
+    // uchovávanie referencií na načítané modely
+    this.conv1Body = null;
   }
 
   init()
@@ -53,37 +56,59 @@ export class Scene1
       position: [-0.5, 9, 0]
     });
 
-    //const detection2 = createDetectionBox({
-    //  width: 6,
-    //  height: 1,
-    //  depth: 10,
-    //  scene: this.scene,
-    //  position: [0, 13, 0]
-    //});
-
     // vloženie detection boxov do poľa spolu s ich sledovanými objektmi, callbackmi a stavmi
     this.detectionBoxes.push({
-      name: 'Conv1',          // pridane meno detection boxu
+      name: 'Conv1',
       detection: detection1,
-      objects: [],         // objekty sledované v tomto boxe
-      callbacks: new Map(),// mapa objekt → callbacky onEnter, onExit
-      states: new Map()    // stav, či objekt je vo vnútri alebo nie
+      objects: [],
+      callbacks: new Map(),
+      states: new Map()
     });
 
-    //this.detectionBoxes.push({
-    //  name: 'Box2',          
-    //  detection: detection2,
-    //  objects: [],
-    //  callbacks: new Map(),
-    //  states: new Map()
-    //});
-
     // vytvorenie statickej kocky v scéne a pridanie do fyziky
-    const staticCubeOBJ = createStaticCube(this.scene, this.physicsWorld);
+    const staticCubeOBJ = createStaticCube({
+      scene: this.scene,
+      physicsWorld: this.physicsWorld,
+      position: [0, 8, 18],
+      size: [10, 1, 10],
+      color: 0x555555
+    });
+    staticCubeOBJ.body.surfaceFriction = 0.5;
 
-    // pridanie padajúcej kocky cez samostatnú metódu
-    // tá automaticky pridá objekt do všetkých detection boxov
-    this.addFallingCube();
+    // vytvorenie padajúcej kocky
+    const cube = createFallingCube({
+      scene: this.scene,
+      physicsWorld: this.physicsWorld,
+      position: [0, 20, 0],
+      rotation: [0, 0, 0],
+      size: [1, 1, 1],
+      color: 0xff0000
+    });
+
+    this.fallingBodies.push(cube.body);
+    meshToBodyMap.set(cube.mesh, cube.body);
+
+    for (const boxInfo of this.detectionBoxes)
+    {
+      boxInfo.objects.push(cube.mesh);
+
+      boxInfo.callbacks.set(cube.mesh, {
+        onEnter: () =>
+        {
+          console.log(`Objekt ${cube.mesh.name} vosiel do detection boxu ${boxInfo.name}`);
+
+          if (boxInfo.name === "Conv1")
+          {
+            moveDetectedObject(cube.mesh, boxInfo, new THREE.Vector3(0, 0, 1), 4);
+          }
+        },
+        onExit: () =>
+        {
+          console.log(`Objekt ${cube.mesh.name} vysiel z detection boxu ${boxInfo.name}`);
+          stopMovingObject(cube.mesh);
+        }
+      });
+    }
 
     // pridanie vizuálnych hitboxov k statickej kocke
     const staticHitbox = showHitbox(staticCubeOBJ.mesh, this.scene, null);
@@ -97,21 +122,21 @@ export class Scene1
       position: [0, 5, 0],
       scale: [0.01, 0.01, 0.01],
       rotation: [0, 0, 180],
-      onLoaded: (obj) => {
+      onLoaded: (obj, body) =>
+      {
         const conv1Hitbox = showHitbox(obj, this.scene, null);
         this.updatables.push(conv1Hitbox);
         this.conv1 = obj;
+        this.conv1Body = body;
       }
     });
 
     // pridanie vizualizácie a update funkcií pre všetky detection boxy
     for (const boxInfo of this.detectionBoxes)
     {
-      // pridanie drôtového pomocníka na zobrazenie detekčnej oblasti
       const helper = showDetectionBoxHelper(boxInfo.detection, this.scene);
       this.updatables.push(helper);
 
-      // update funkcia na aktualizáciu pozície detection boxu
       this.updatables.push({
         update: () => boxInfo.detection.update()
       });
@@ -121,26 +146,29 @@ export class Scene1
       update: (delta) => updateDetectedObjectsMovement(delta)
     });
 
-    // update funkcia, ktorá kontroluje vstup a výstup objektov v každom detection boxe
-    // a spúšťa príslušné callbacky onEnter a onExit
     this.updatables.push({
-      update: () => {
+      update: () =>
+      {
         for (const boxInfo of this.detectionBoxes)
         {
           for (const obj of boxInfo.objects)
           {
             const result = boxInfo.detection.checkContains(obj);
 
-            if (result !== null) // stav sa zmenil - objekt práve vošiel alebo vyšiel
+            if (result !== null)
             {
               const callbacks = boxInfo.callbacks.get(obj);
               if (!callbacks) continue;
 
               if (result === true && callbacks.onEnter)
+              {
                 callbacks.onEnter();
+              }
 
               if (result === false && callbacks.onExit)
+              {
                 callbacks.onExit();
+              }
 
               boxInfo.states.set(obj, result);
             }
@@ -150,56 +178,24 @@ export class Scene1
     });
   }
 
-  // funkcia na pridanie nového padajúceho objektu do scény a do všetkých detection boxov
-  addFallingCube()
-  {
-    const cube = createFallingCube(this.scene, this.physicsWorld);
-
-    this.fallingBodies.push(cube.body);
-
-    for (const boxInfo of this.detectionBoxes)
-    {
-      boxInfo.objects.push(cube.mesh);
-
-      boxInfo.callbacks.set(cube.mesh, {
-        onEnter: () => 
-        {
-          console.log(`Objekt ${cube.mesh.name} vosiel do detection boxu ${boxInfo.name}`);
-
-          if (boxInfo.name === "Conv1")
-          {
-            // Zacni pohybovat objektom, nie detection boxom
-            moveDetectedObject(cube.mesh,boxInfo,new THREE.Vector3(0, 0, 1),2);
-
-          }
-        },
-        onExit: () => 
-        {
-          console.log(`Objekt ${cube.mesh.name} vysiel z detection boxu ${boxInfo.name}`);
-
-          // Pripadne zastav pohyb
-          stopMovingObject(cube.mesh);
-        }
-      });
-    }
-}
-
   // kontrola kolízií medzi padajúcimi fyzikálnymi telesami
   checkCollisionWithFalling(bodyToCheck)
   {
-    // získanie bounding boxu tela, ktoré kontrolujeme
     const boxToCheck = new THREE.Box3().setFromObject(bodyToCheck.mesh);
 
-    for (const fallingBody of this.fallingBodies)
+    for (const otherBody of this.physicsWorld.bodies)
     {
-      // preskočiť kontrolu kolízie sám so sebou
-      if (fallingBody === bodyToCheck) continue;
+      if (otherBody === bodyToCheck)
+      {
+        continue;
+      }
 
-      // získanie bounding boxu ďalšieho telesa
-      const otherBox = new THREE.Box3().setFromObject(fallingBody.mesh);
+      const otherBox = new THREE.Box3().setFromObject(otherBody.mesh);
 
-      // kontrola prekrytia boxov
-      if (boxToCheck.intersectsBox(otherBox)) return true;
+      if (boxToCheck.intersectsBox(otherBox))
+      {
+        return true;
+      }
     }
 
     return false;
@@ -208,11 +204,9 @@ export class Scene1
   // hlavná update funkcia, volaná každý frame
   update(delta)
   {
-    // aktualizácia fyzikálneho sveta
     this.physicsWorld.update(delta);
-    updateDetectedObjectsMovement(delta); 
+    updateDetectedObjectsMovement(delta);
 
-    // update všetkých objektov, ktoré majú update funkciu
     for (const u of this.updatables)
     {
       if (typeof u.update === 'function')
@@ -221,18 +215,16 @@ export class Scene1
       }
     }
 
-    // kontrola kolízií medzi padajúcimi telesami
     for (const body of this.fallingBodies)
     {
       if (this.checkCollisionWithFalling(body))
       {
         console.log('Kolizia detekovana pre telo:', body);
-        // tu možno pridať reakciu na kolíziu
+        // Tu môžeš spracovať reakciu
       }
     }
   }
 
-  // uvoľnenie všetkých referencií a dát pred zničením scény
   dispose()
   {
     this.updatables = [];
