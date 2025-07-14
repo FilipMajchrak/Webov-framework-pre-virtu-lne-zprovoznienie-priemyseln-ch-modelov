@@ -42,7 +42,14 @@ export function createDetectionBox({width,height,depth,scene,position = [0, 0, 0
         const prevInside = inside;
         inside = intersects;
 
-        return intersects !== prevInside ? inside : null;
+        // Ak sa stav nezmenil, vrat null (žiadna zmena)
+        if (intersects === prevInside) 
+        {
+            return null;
+        }
+
+        // Stav sa zmenil: vošiel alebo vyšiel
+        return intersects;
     }
 
   return {mesh,box3,update,checkContains};

@@ -1,8 +1,11 @@
-import * as THREE from 'three';
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
 import { PhysicsWorld } from '../physics.js';
 import { createStaticCube, createFallingCube, loadOBJModel } from '../objects.js';
 import { createDetectionBox } from '../detection.js';
 import { showHitbox, showDetectionBoxHelper } from '../debugtool.js';
+import { moveDetectedObject, updateDetectedObjectsMovement, stopMovingObject } from '../action_objects/conv.js';
+
+export const movingObjectsMap = new Map();
 
 export class Scene1
 {
@@ -114,6 +117,10 @@ export class Scene1
       });
     }
 
+    this.updatables.push({
+      update: (delta) => updateDetectedObjectsMovement(delta)
+    });
+
     // update funkcia, ktorá kontroluje vstup a výstup objektov v každom detection boxe
     // a spúšťa príslušné callbacky onEnter a onExit
     this.updatables.push({
@@ -147,27 +154,35 @@ export class Scene1
   addFallingCube()
   {
     const cube = createFallingCube(this.scene, this.physicsWorld);
-    this.fallingBodies.push(cube.body);
 
-    if (!cube.mesh.name)
-      cube.mesh.name = `FallingCube_${this.fallingBodies.length}`;
+    this.fallingBodies.push(cube.body);
 
     for (const boxInfo of this.detectionBoxes)
     {
       boxInfo.objects.push(cube.mesh);
 
       boxInfo.callbacks.set(cube.mesh, {
-        onEnter: () =>
+        onEnter: () => 
         {
           console.log(`Objekt ${cube.mesh.name} vosiel do detection boxu ${boxInfo.name}`);
+
+          if (boxInfo.name === "Conv1")
+          {
+            // Zacni pohybovat objektom, nie detection boxom
+            moveDetectedObject(cube.mesh,boxInfo,new THREE.Vector3(0, 0, 1),2);
+
+          }
         },
-        onExit: () =>
+        onExit: () => 
         {
           console.log(`Objekt ${cube.mesh.name} vysiel z detection boxu ${boxInfo.name}`);
+
+          // Pripadne zastav pohyb
+          stopMovingObject(cube.mesh);
         }
       });
     }
-  }
+}
 
   // kontrola kolízií medzi padajúcimi fyzikálnymi telesami
   checkCollisionWithFalling(bodyToCheck)
@@ -195,12 +210,15 @@ export class Scene1
   {
     // aktualizácia fyzikálneho sveta
     this.physicsWorld.update(delta);
+    updateDetectedObjectsMovement(delta); 
 
     // update všetkých objektov, ktoré majú update funkciu
     for (const u of this.updatables)
     {
       if (typeof u.update === 'function')
+      {
         u.update(delta);
+      }
     }
 
     // kontrola kolízií medzi padajúcimi telesami
