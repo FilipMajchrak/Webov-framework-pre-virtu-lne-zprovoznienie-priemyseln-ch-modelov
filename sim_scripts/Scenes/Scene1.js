@@ -60,6 +60,7 @@ export class Scene1
 
     // vloženie detection boxov do poľa spolu s ich sledovanými objektmi, callbackmi a stavmi
     this.detectionBoxes.push({
+      name: 'Conv1',          // pridane meno detection boxu
       detection: detection1,
       objects: [],         // objekty sledované v tomto boxe
       callbacks: new Map(),// mapa objekt → callbacky onEnter, onExit
@@ -67,6 +68,7 @@ export class Scene1
     });
 
     //this.detectionBoxes.push({
+    //  name: 'Box2',          
     //  detection: detection2,
     //  objects: [],
     //  callbacks: new Map(),
@@ -141,24 +143,28 @@ export class Scene1
     });
   }
 
-  // metóda na pridanie nového padajúceho objektu do scény a do všetkých detection boxov
+  // funkcia na pridanie nového padajúceho objektu do scény a do všetkých detection boxov
   addFallingCube()
   {
     const cube = createFallingCube(this.scene, this.physicsWorld);
-
     this.fallingBodies.push(cube.body);
+
+    if (!cube.mesh.name)
+      cube.mesh.name = `FallingCube_${this.fallingBodies.length}`;
 
     for (const boxInfo of this.detectionBoxes)
     {
       boxInfo.objects.push(cube.mesh);
 
-      // nastavíme meno alebo id, ak ešte nemá
-      if (!cube.mesh.name)
-        cube.mesh.name = `FallingCube_${this.fallingBodies.length}`;
-
       boxInfo.callbacks.set(cube.mesh, {
-        onEnter: () => console.log(`Objekt ${cube.mesh.name} vosiel do detection boxu`),
-        onExit: () => console.log(`Objekt ${cube.mesh.name} vysiel z detection boxu`)
+        onEnter: () =>
+        {
+          console.log(`Objekt ${cube.mesh.name} vosiel do detection boxu ${boxInfo.name}`);
+        },
+        onExit: () =>
+        {
+          console.log(`Objekt ${cube.mesh.name} vysiel z detection boxu ${boxInfo.name}`);
+        }
       });
     }
   }
