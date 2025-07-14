@@ -73,7 +73,7 @@ export class Scene1
       size: [10, 1, 10],
       color: 0x555555
     });
-    staticCubeOBJ.body.surfaceFriction = 0.5;
+    staticCubeOBJ.body.surfaceFriction = 0.7;
 
     // vytvorenie padajúcej kocky
     const cube = createFallingCube({
@@ -219,7 +219,7 @@ export class Scene1
     {
       if (this.checkCollisionWithFalling(body))
       {
-        console.log('Kolizia detekovana pre telo:', body);
+        //console.log('Kolizia detekovana pre telo:', body);
         // Tu môžeš spracovať reakciu
       }
     }
