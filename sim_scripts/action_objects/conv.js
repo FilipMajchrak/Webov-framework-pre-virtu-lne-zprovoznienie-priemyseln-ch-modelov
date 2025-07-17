@@ -3,17 +3,23 @@ const movingObjectsMap = new Map();
 
 /**
  * Spusti pohyb objektu mesh v smere directionVector a rýchlosti speed.
- * Predpokladá sa, že mesh je Physijs.Mesh.
+ * Ak nie je smer alebo rýchlosť zadaná, zoberie sa z detectionBox.
  */
-function moveDetectedObject(mesh, detectionBox, directionVector, speed)
+function moveDetectedObject(mesh, detectionBox, directionVector = null, speed = null)
 {
   let dirVec;
 
-  if (directionVector instanceof THREE.Vector3)
+  // Zober smer z detectionBox, ak nie je zadaný
+  if (!directionVector && detectionBox.moveDirection instanceof THREE.Vector3)
+  {
+    dirVec = detectionBox.moveDirection.clone().normalize();
+  }
+  else if (directionVector instanceof THREE.Vector3)
   {
     dirVec = directionVector.clone().normalize();
   }
   else if (
+    directionVector &&
     typeof directionVector === 'object' &&
     'x' in directionVector && 'y' in directionVector && 'z' in directionVector
   )
@@ -25,18 +31,36 @@ function moveDetectedObject(mesh, detectionBox, directionVector, speed)
     dirVec = new THREE.Vector3(1, 0, 0); // defaultný smer
   }
 
-  if (!mesh.setLinearVelocity)
+  // Ak by bol smer nulový, zruš pohyb
+  if (dirVec.lengthSq() === 0)
   {
-    //console.warn('moveDetectedObject: mesh nie je Physijs objekt.');
+    console.warn('Nulový smer pohybu - pohyb sa neaplikuje.');
     return;
   }
 
-  mesh.setLinearVelocity(dirVec.multiplyScalar(speed));
+  // Zober rýchlosť z detectionBox, ak nie je zadaná
+  const finalSpeed = (typeof speed === 'number')
+    ? speed
+    : (typeof detectionBox.moveSpeed === 'number')
+      ? detectionBox.moveSpeed
+      : 5;
+
+  if (!mesh.setLinearVelocity)
+  {
+    return;
+  }
+
+  // Nastav počiatočnú rýchlosť
+  mesh.setLinearVelocity(dirVec.clone().multiplyScalar(finalSpeed));
   mesh.setDamping(0, mesh.angularDamping ?? 0.5);
 
-  movingObjectsMap.set(mesh, {
+  // Zaregistruj do pohybovej mapy spolu so smerom a rýchlosťou
+  movingObjectsMap.set(mesh,
+  {
     detectionBox: detectionBox,
-    body: mesh
+    body: mesh,
+    direction: dirVec,
+    speed: finalSpeed
   });
 }
 
@@ -48,11 +72,20 @@ function updateDetectedObjectsMovement(delta)
 {
   for (const [mesh, data] of movingObjectsMap.entries())
   {
-    const { detectionBox, body } = data;
+    const { detectionBox, body, direction, speed } = data;
 
-    const inside = detectionBox.contains(mesh);
+    const inside = detectionBox.isInside(mesh);
 
-    if (!inside)
+    if (inside)
+    {
+      const velocity = body.getLinearVelocity();
+
+      // Zachová vertikálnu rýchlosť (napr. pád) a udržiava horizontálnu zložku
+      const newVelocity = new THREE.Vector3(direction.x * speed,velocity.y,direction.z * speed);
+      body.setLinearVelocity(newVelocity);
+      body.setDamping(0, body.angularDamping ?? 0.5);
+    }
+    else
     {
       body.setDamping(0.9, body.angularDamping ?? 0.5);
 
@@ -61,6 +94,7 @@ function updateDetectedObjectsMovement(delta)
         stopMovingObject(mesh);
       }
     }
+
   }
 }
 

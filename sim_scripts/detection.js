@@ -1,4 +1,5 @@
-function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color = 0x00ffff,opacity = 0.2})
+function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color = 0x00ffff,opacity = 0.2,moveDirection = new THREE.Vector3(1, 0, 0),moveSpeed = 5
+})
 {
   const geometry = new THREE.BoxGeometry(width, height, depth);
   const material = new THREE.MeshBasicMaterial({color,opacity,transparent: true,wireframe: true});
@@ -17,9 +18,8 @@ function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color
 
   scene.add(mesh);
 
-
   const box3 = new THREE.Box3();
-  let inside = false;
+  const insideMap = new Map();
 
   function update()
   {
@@ -27,18 +27,28 @@ function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color
     box3.setFromObject(mesh);
   }
 
-  function contains(object3D)
+  // Vracia true len pri vstupe
+ function contains(object3D)
   {
     const objectBox = new THREE.Box3().setFromObject(object3D);
     const nowInside = box3.intersectsBox(objectBox);
+    const wasInside = insideMap.get(object3D) || false;
 
-    const justEntered = nowInside && !inside;
-    inside = nowInside;
-    return justEntered;
+    //  console.log(`[DEBUG] ${object3D.name} - nowInside: ${nowInside}, wasInside: ${wasInside}`);
+
+    insideMap.set(object3D, nowInside);
+    return nowInside && !wasInside;
   }
 
-  const detection = { mesh, box3, update, contains};
-  showDetectionBox(detection, scene);
+  // Vracia true pokiaľ je objekt stále vnútri (každý frame)
+  function isInside(object3D)
+  {
+    const objectBox = new THREE.Box3().setFromObject(object3D);
+    return box3.intersectsBox(objectBox);
+  }
 
-  return {mesh,box3,update,contains};
+  const detection = {mesh,box3,update,contains,isInside,moveDirection,moveSpeed};
+
+  showDetectionBox(detection, scene);
+  return detection;
 }

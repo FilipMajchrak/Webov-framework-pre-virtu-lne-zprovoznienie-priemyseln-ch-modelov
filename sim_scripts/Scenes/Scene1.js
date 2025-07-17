@@ -36,37 +36,39 @@ Scene1.prototype.initScene = function ()
 
   const { mesh: cube } = createFallingCube({
     scene: this.scene,
-    position: [0, 15, 0],
+    position: [0, 11, 0],
     rotation: [0, 0, 0],
     size: [1, 1, 1],
     color: 0xff0000,
     mass: 1,
     friction: 1,
-    restitution: 1,
+    restitution: 0.5,
   },"Cube1");
   this.movingBodies.push(cube);
-
-    const { mesh: cube2 } = createFallingCube({
-    scene: this.scene,
-    position: [0, 16, 3],
-    rotation: [0, 0, 0],
-    size: [1, 1, 1],
-    color: 0xff0000,
-    mass: 1,
-    friction: 1,
-    restitution: 1,
-  },"Cube2");
-  this.movingBodies.push(cube2);
 
   this.detectionBox = createDetectionBox({
     width: 4,
     height: 0.5,
     depth: 25,
     scene: this.scene,
-    position: [-0.5, 9.5, 0]
+    position: [-0.5, 9.3, 0],
+    moveDirection: new THREE.Vector3(0, 0, 1), 
+    moveSpeed: 5
   });
 
   this.updatables.push(() => this.detectionBox.update());
+
+  this.updatables.push(() => {
+    for (const obj of this.movingBodies) {
+      if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj))
+      {
+        console.log('Objekt vošiel do detection boxu:',obj.name);
+        moveDetectedObject(obj, this.detectionBox);
+        this.detectedObjects.add(obj);
+      }
+    }
+    updateDetectedObjectsMovement();
+  });
 };
 
 Scene1.prototype.addLights = function ()
@@ -95,15 +97,6 @@ Scene1.prototype.init = function ()
 
 Scene1.prototype.update = function (delta)
 {
-  this.updatables.push(() => {
-    for (const obj of this.movingBodies) {
-      if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj)) {
-        console.log('Objekt vošiel do detection boxu:',obj.name);
-        this.detectedObjects.add(obj); 
-      }
-    }
-  });
-
   for (const updateFn of this.updatables)
   {
     updateFn(delta);
