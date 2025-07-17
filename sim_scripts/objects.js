@@ -101,6 +101,7 @@ function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],siz
   const cubeFalling = new Physijs.BoxMesh(geometry, material, mass);
   cubeFalling.position.set(...position);
   cubeFalling.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cubeFalling.setAngularFactor(new THREE.Vector3(0, 0, 0));
   cubeFalling.name = name;
 
   scene.add(cubeFalling);
