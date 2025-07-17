@@ -1,115 +1,111 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-import { PhysicsWorld } from '../physics.js';
-import { createStaticCube, createFallingCube, loadOBJModel } from '../objects.js';
-import { createDetectionBox } from '../detection.js';
-import { showHitbox, showDetectionBoxHelper } from '../debugtool.js';
-
-export class Scene1 
+function Scene1(camera)
 {
-  constructor(camera) 
-  {
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#252526');
+  this.scene = new Physijs.Scene();
+  this.scene.setGravity(new THREE.Vector3(0, -9.81, 0));
 
-    this.physicsWorld = new PhysicsWorld();
-    this.updatables = [];
+  this.camera = camera;
+  this.updatables = [];
+  this.movingBodies = [];
+  this.detectionZones = [];
 
-    this.camera = camera;
-  }
-
-  init() 
-  {
-    // Svetlá
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5);
-    this.scene.add(directionalLight);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    this.scene.add(ambientLight);
-
-    const gridHelper = new THREE.GridHelper(100, 100);
-    this.scene.add(gridHelper);
-
-    // ➜ Tvoje objekty
-    const staticCubeOBJ = createStaticCube(this.scene, this.physicsWorld);
-    const fallingCubeOBJ = createFallingCube(this.scene, this.physicsWorld);
-
-    loadOBJModel({
-      scene: this.scene,
-      physicsWorld: this.physicsWorld,
-      url: 'obj/conv1.obj',
-      position: [0, 5, 0],
-      scale: [0.01, 0.01, 0.01],
-      rotation: [0, 0, 180],
-      onLoaded: (obj) => {
-        //console.log('Model hotový:', obj);
-
-        const conv1Hitbox = showHitbox(obj, this.scene, obj);
-        this.updatables.push(conv1Hitbox);
-
-        this.conv1 = obj;
-      }
-    });
-
-
-    // Pridaj hitboxy do updatables
-    const staticHitbox = showHitbox(staticCubeOBJ.mesh, this.scene, staticCubeOBJ.body);
-    const fallingHitbox = showHitbox(fallingCubeOBJ.mesh, this.scene, fallingCubeOBJ.body);
-    this.updatables.push(staticHitbox);
-    this.updatables.push(fallingHitbox);
-
-    // ➜ Detection box
-    const detection = createDetectionBox({
-      width: 4,
-      height: 1,
-      depth: 25,
-      scene: this.scene,
-      position: [-0.5, 9, 0]
-    });
-
-    // Detection vizualizácia
-    const detectionHelper = showDetectionBoxHelper(detection, this.scene);
-    this.updatables.push(detectionHelper);
-
-    // Detection box sám do updatables
-    this.updatables.push({
-      update: () => detection.update()
-    });
-
-    // Log, ak kocka vojde do detection boxu
-    this.updatables.push({
-    update: () => detection.update()
-    });
-
-    // Log, ak kocka vojde do detection boxu
-    this.updatables.push({
-      update: () => {
-        // detection.update(); // duplikát netreba, voláš vyššie
-
-        const result = detection.checkContains(fallingCubeOBJ.mesh);
-
-        if (result === true) {
-          console.log('Objekt PRÁVE VOŠIEL!');
-        }
-        if (result === false) {
-          console.log('Objekt PRÁVE VYŠIEL!');
-        }
-      }
-    });
-    }
-
-  update(delta) 
-  {
-    this.physicsWorld.update(delta);
-
-    for (const u of this.updatables) {
-      u.update();
-    }
-  }
-
-  dispose() 
-  {
-    // Sem daj logiku na zmazanie všetkých objektov
-    this.updatables = [];
-  }
+  this.initScene();
 }
+
+Scene1.prototype.initScene = function ()
+{
+  this.detectedObjects = new Set(); // objekty, ktoré už boli detekované
+  this.addLights();
+  this.addHelpers();
+
+  loadOBJModel({
+    scene: this.scene,
+    url: 'obj/conv1.obj',
+    position: [0, 5, 0],
+    scale: [0.01, 0.01, 0.01],
+    rotation: [0, 0, 180],
+    mass: 0,
+  },"Conv1");
+
+  createStaticCube({
+    scene: this.scene,
+    position: [0, 8, 18],
+    rotation: [0, 0, 0],
+    size: [10, 1, 10],
+    color: 0x444444,
+  },"TestPlatform");
+
+  const { mesh: cube } = createFallingCube({
+    scene: this.scene,
+    position: [0, 11, 0],
+    rotation: [0, 0, 0],
+    size: [1, 1, 1],
+    color: 0xff0000,
+    mass: 1,
+    friction: 1,
+    restitution: 0.5,
+  },"Cube1");
+  this.movingBodies.push(cube);
+
+  this.detectionBox = createDetectionBox({
+    width: 4,
+    height: 0.5,
+    depth: 25,
+    scene: this.scene,
+    position: [-0.5, 9.3, 0],
+    moveDirection: new THREE.Vector3(0, 0, 1), 
+    moveSpeed: 5
+  });
+
+  this.updatables.push(() => this.detectionBox.update());
+
+  this.updatables.push(() => {
+    for (const obj of this.movingBodies) {
+      if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj))
+      {
+        console.log('Objekt vošiel do detection boxu:',obj.name);
+        moveDetectedObject(obj, this.detectionBox);
+        this.detectedObjects.add(obj);
+      }
+    }
+    updateDetectedObjectsMovement();
+  });
+};
+
+Scene1.prototype.addLights = function ()
+{
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  this.scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(10, 20, 10);
+  this.scene.add(directionalLight);
+};
+
+Scene1.prototype.addHelpers = function ()
+{
+  const gridHelper = new THREE.GridHelper(100, 100);
+  gridHelper.material.depthWrite = false;
+  gridHelper.material.opacity = 0.3;
+  gridHelper.material.transparent = true;
+  this.scene.add(gridHelper);
+};
+
+Scene1.prototype.init = function ()
+{
+  // ďalšia inicializácia ak treba
+};
+
+Scene1.prototype.update = function (delta)
+{
+  for (const updateFn of this.updatables)
+  {
+    updateFn(delta);
+  }
+
+  this.scene.simulate(undefined, 1);
+};
+
+Scene1.prototype.dispose = function ()
+{
+  // čistenie ak treba
+};

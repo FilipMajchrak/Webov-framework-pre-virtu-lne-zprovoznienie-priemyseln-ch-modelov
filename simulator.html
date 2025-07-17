@@ -12,51 +12,55 @@
   <link href="style/HMI.css" rel="stylesheet">
   <link href="style/simulator.css" rel="stylesheet">
 
-   <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
-    }
-  }
-  </script>
+  <!-- THREE.js (verzia r124 - kompatibilná s Physijs) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/build/three.min.js"></script>
 
-  <!-- ES modul -->
-  <script type="module" src="sim_scripts/threeScene.js"></script>
-  <!-- Resize -->
+  <!-- OBJLoader z rovnakej verzie -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/examples/js/loaders/OBJLoader.js"></script>
+
+  <!-- Physijs -->
+  <script src="sim_scripts/physi/physi.js"></script>
+
+  <!-- Ostatné skripty projektu -->
   <script src="scripts/resize.js"></script>
+  <script src="sim_scripts/camera.js"></script>
+  <script src="sim_scripts/SceneManager.js"></script>
+  <script src="sim_scripts/Scenes/Scene1.js"></script>
+  <script src="sim_scripts/objects.js"></script>
+  <script src="sim_scripts/detection.js"></script>
+  <script src="sim_scripts/action_objects/conv.js"></script>
+  <script src="sim_scripts/debugtool.js"></script>
 </head>
+
 <body>
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-        <a class="navbar-brand">ST Simulátor</a>
-        <div class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto">
-            <li class="nav-item"><a class="nav-link nav-tab" href="index.html">Späť</a></li>
-            <li class="nav-item"><a class="nav-link nav-tab" href="simulator.html">Simulátor</a></li>
-        </ul>
-        </div>
-    </nav>
-
-    <div class="simulator-layout">
-
-    <div class="split-container">
-
-        <!-- Ľavý panel -->
-        <div class="toolbox">
-            <div class="inner">
-                <h5 class="text-light mb-3 text-center">Nastavenia</h5>
-            </div>
-        </div>
-
-        <!-- Pravý panel -->
-        <div class="main-panel">
-        <div id="three-container"></div>
-        </div>
-
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+    <a class="navbar-brand">ST Simulátor</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link nav-tab" href="index.html">Späť</a></li>
+        <li class="nav-item"><a class="nav-link nav-tab" href="simulator.html">Simulátor</a></li>
+      </ul>
     </div>
+  </nav>
 
-</div>
+  <div class="simulator-layout">
+    <div class="split-container">
+      <!-- Ľavý panel -->
+      <div class="toolbox">
+        <div class="inner">
+          <h5 class="text-light mb-3 text-center">Nastavenia</h5>
+        </div>
+      </div>
 
+      <!-- Pravý panel -->
+      <div class="main-panel">
+        <div id="three-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Načítanie hlavnej scény po načítaní DOM -->
+  <script src="sim_scripts/threeScene.js"></script>
 </body>
 </html>

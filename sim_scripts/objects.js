@@ -1,101 +1,110 @@
-// objects.js
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/OBJLoader.js';
-import { PhysicsBody } from './physics.js';
-import { showHitbox, showDetectionBoxHelper} from './debugtool.js';
-
-// Načítaj OBJ model a vlož ho do scény
-/**
-* Načíta OBJ model do scény.
-*
-* @param {object} options - nastavenia:
-*   scene, physicsWorld, url, position, scale, rotation, onLoaded
-*/
-export function loadOBJModel({
-  scene,
-  physicsWorld,
-  url,
-  position = [0, 0, 0],
-  scale = [1, 1, 1],
-  rotation = [0, 0, 0],
-  onLoaded = () => {}
-}) 
+// Prevod stupnov na radiany (Three.js pouziva radiany)
+function degToRad(degrees)
 {
-  const loader = new OBJLoader();
+  return degrees * (Math.PI / 180);
+}
 
-  loader.load(url, (obj) => 
+// Nacitanie .OBJ modelu a vytvorenie fyzikalneho boxu ako obalky
+function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation = [0, 0, 0],mass = 0,friction = 0.8,restitution = 0.3,onLoaded = () => {}}, name = '')
+{
+  const loader = new THREE.OBJLoader();
+
+  loader.load(url, function (obj)
   {
-    // Zarovnaj pivot do stredu
+    // Ziskaj stred bounding boxu na centrovanie
     const box = new THREE.Box3().setFromObject(obj);
     const center = new THREE.Vector3();
     box.getCenter(center);
 
-    obj.traverse((child) => 
+    // Nastav material a posun meshe tak, aby boli centrovane
+    obj.traverse(function (child)
     {
-      if (child.isMesh) {
+      if (child.isMesh)
+      {
+        child.geometry.computeBoundingBox();
+        child.geometry.computeVertexNormals();
+        child.material = new THREE.MeshStandardMaterial({ color: 0x999999 });
         child.position.sub(center);
       }
     });
 
-    scene.add(obj);
-
+    
     obj.position.set(...position);
     obj.scale.set(...scale);
-    obj.rotation.set(
-      degToRad(rotation[0]),
-      degToRad(rotation[1]),
-      degToRad(rotation[2])
-    );
+    obj.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+    obj.name = name;
 
-    const physBody = new PhysicsBody(obj);
-    physBody.isStatic = true;
-    physicsWorld.addBody(physBody);
+    // pridaj vizuálny objekt
+    scene.add(obj);
 
-    showHitbox(obj, scene, physBody);
+    // Vytvor fyzikalny collider s rovnakym rozmerom ako bounding box
+    const size = new THREE.Vector3();
+    box.getSize(size);
 
-    onLoaded(obj);
+    const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ visible: false }),friction,restitution);
+
+    const collider = new Physijs.BoxMesh(new THREE.BoxGeometry(size.x, size.y, size.z),material,mass);
+
+    collider.position.copy(obj.position);
+    collider.rotation.copy(obj.rotation);
+    collider.scale.copy(obj.scale);
+    collider.name = name + '_Collider';
+
+    scene.add(collider);
+    showHitbox(obj, scene, collider); // Zobrazi zltu obalku
+
+    onLoaded(obj, collider);
   });
 }
 
-// Vytvor statickú kocku (platformu)
-export function createStaticCube(scene, physicsWorld) 
+// Vytvori bounding box mesh (vizualny alebo referencny)
+// Tento mesh nie je fyzikalne telo – je len reprezentaciou objemu objektu
+function createBoundingBoxMesh(object3D) {
+  const box = new THREE.Box3().setFromObject(object3D);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  box.getSize(size);
+  box.getCenter(center);
+
+  const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+  const material = new THREE.MeshBasicMaterial({visible:false});
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.copy(center);
+
+  return mesh;
+}
+
+// Vytvori staticku kocku (napr. podlahu) s nulovou hmotnostou
+function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size = [10, 1, 10],color = 0x555555,friction = 0.8,restitution = 0.3},name = '')
 {
-  const cubeStatic = new THREE.Mesh(
-    new THREE.BoxGeometry(10, 1, 10),
-    new THREE.MeshStandardMaterial({ color: 0x555555 })
-  );
-  cubeStatic.position.set(0, 8, 18);
+  const geometry = new THREE.BoxGeometry(...size);
+  const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }),friction,restitution);
+
+  const cubeStatic = new Physijs.BoxMesh(geometry, material, 0);
+  cubeStatic.position.set(...position);
+  cubeStatic.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cubeStatic.name = name;
+
   scene.add(cubeStatic);
+  showHitbox(cubeStatic, scene); // Zobrazi zltu obalku
 
-  const staticBody = new PhysicsBody(cubeStatic);
-  staticBody.isStatic = true;
-  physicsWorld.addBody(staticBody);
-
-  showHitbox(cubeStatic, scene, staticBody);
-
-  return{mesh:cubeStatic, body:staticBody};
+  return { mesh: cubeStatic, body: cubeStatic };
 }
 
-// Vytvor kocku, ktorá padá
-export function createFallingCube(scene, physicsWorld) 
+// Vytvori dynamicku (padajucu) kocku s nenulovou hmotnostou
+function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],size = [1, 1, 1],color = 0xff0000,mass = 1,friction = 0.8,restitution = 0.3},name = '')
 {
-  const cubeFalling = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0xff0000 })
-  );
-  cubeFalling.position.set(0, 20, 0);
+  const geometry = new THREE.BoxGeometry(...size);
+  const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }),friction,restitution);
+
+  const cubeFalling = new Physijs.BoxMesh(geometry, material, mass);
+  cubeFalling.position.set(...position);
+  cubeFalling.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cubeFalling.name = name;
+
   scene.add(cubeFalling);
+  showHitbox(cubeFalling, scene); // Zobrazi zltu obalku
 
-  const fallingBody = new PhysicsBody(cubeFalling);
-  physicsWorld.addBody(fallingBody);
-
-  showHitbox(cubeFalling, scene, fallingBody);
-
-  return {mesh: cubeFalling,body: fallingBody,};
-}
-
-// Pomocná funkcia na prevod stupňov na radiány
-export function degToRad(degrees) 
-{
-  return degrees * (Math.PI / 180);
+  return { mesh: cubeFalling, body: cubeFalling };
 }
