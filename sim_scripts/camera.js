@@ -1,71 +1,76 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-import { PointerLockControls } from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/PointerLockControls.js';
-
-export function createCamera()
+function createCamera()
 {
   const camera = new THREE.PerspectiveCamera(
-    75,     // FOV - zorný uhol kamery (Field of View) v stupňoch
-    window.innerWidth / window.innerHeight, // Pomer strán (aspect ratio)
-    0.1,    // Near Clipping Plane - najbližšia vzdialenosť, čo sa bude renderovať
-    1000    // Near Clipping Plane - najbližšia vzdialenosť, čo sa bude renderovať
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
   );
-
-  camera.position.set(0, 20, 30);
-
   return camera;
 }
 
-export function setupPointerLockControls(camera, renderer)
+function setupPointerFlyControls(camera, renderer)
 {
-    const controls = new PointerLockControls(camera, renderer.domElement);
+  const moveSpeed = 5;
+  const rotationSpeed = 0.002;
 
-    renderer.domElement.addEventListener('click', () =>
+  const pitchObject = new THREE.Object3D();
+  pitchObject.add(camera);
+
+  const yawObject = new THREE.Object3D();
+  yawObject.position.set(-15,15,0);
+  yawObject.rotation.y = THREE.MathUtils.degToRad(-90);
+  yawObject.add(pitchObject);
+
+
+  const keys = {};
+
+  document.addEventListener('keydown', (e) => keys[e.code] = true);
+  document.addEventListener('keyup', (e) => keys[e.code] = false);
+
+  document.addEventListener('mousemove', (event) =>
+  {
+    if (document.pointerLockElement === renderer.domElement)
     {
-        controls.lock();
-    });
+      yawObject.rotation.y -= event.movementX * rotationSpeed;
+      pitchObject.rotation.x -= event.movementY * rotationSpeed;
+      pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
+    }
+  });
 
-    const keysPressed = {};
+  renderer.domElement.addEventListener('click', () =>
+  {
+    renderer.domElement.requestPointerLock();
+  });
 
-    window.addEventListener('keydown', (event) =>
-    {
-        keysPressed[event.key.toLowerCase()] = true;
-    });
+  const velocity = new THREE.Vector3();
+  let prevTime = performance.now();
 
-    window.addEventListener('keyup', (event) =>
-    {
-        keysPressed[event.key.toLowerCase()] = false;
-    });
+  function updateCameraPosition()
+  {
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
 
-    return function updateCameraPosition()
-    {
-        const moveSpeed = 0.1;
+    velocity.set(0, 0, 0);
 
-        // Vektor smeru pohľadu
-        const direction = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
 
-        camera.getWorldDirection(direction);
+    const right = new THREE.Vector3();
+    right.crossVectors(direction, camera.up).normalize();
 
-        // Pohyb dopredu/dozadu vrátane osy Y
-        if (keysPressed['w'])
-        {
-        camera.position.add(direction.clone().multiplyScalar(moveSpeed));
-        }
-        if (keysPressed['s'])
-        {
-        camera.position.add(direction.clone().multiplyScalar(-moveSpeed));
-        }
+    if (keys['KeyW']) velocity.addScaledVector(direction, moveSpeed * delta);
+    if (keys['KeyS']) velocity.addScaledVector(direction, -moveSpeed * delta);
+    if (keys['KeyA']) velocity.addScaledVector(right, -moveSpeed * delta);
+    if (keys['KeyD']) velocity.addScaledVector(right, moveSpeed * delta);
 
-        // Vektor vpravo
-        const right = new THREE.Vector3();
-        right.crossVectors(camera.up, direction).normalize();
+    yawObject.position.add(velocity);
 
-        if (keysPressed['d'])
-        {
-        camera.position.add(right.clone().multiplyScalar(-moveSpeed));
-        }
-        if (keysPressed['a'])
-        {
-        camera.position.add(right.clone().multiplyScalar(moveSpeed));
-        }
-    };
+    prevTime = time;
+  }
+
+  return {
+    updateCameraPosition,
+    yawObject
+  };
 }

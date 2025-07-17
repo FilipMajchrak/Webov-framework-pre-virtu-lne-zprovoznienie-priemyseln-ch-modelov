@@ -240,7 +240,7 @@ createShape = function( description ) {
 };
 
 public_functions.init = function( params ) {
-	importScripts( params.ammo );
+	importScripts('ammo.js');
 
 	_transform = new Ammo.btTransform;
 	_vec3_1 = new Ammo.btVector3(0,0,0);

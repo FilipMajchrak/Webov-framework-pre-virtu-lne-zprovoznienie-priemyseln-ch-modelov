@@ -1,17 +1,11 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-
 // Mapa všetkých aktívne pohybujúcich sa objektov
-export const movingObjectsMap = new Map();
-
-// Mapa pre rýchle získanie PhysicsBody podľa mesh objektu
-export const meshToBodyMap = new Map();
+const movingObjectsMap = new Map();
 
 /**
- * Spusti pohyb objektu mesh v smere directionVector a rychlosti speed,
- * pomocou nastavenia velocity na PhysicsBody – využíva zotrvačnosť.
- * Počas pohybu v detection boxe sa linearDamping nastaví na 0 (bez odporu).
+ * Spusti pohyb objektu mesh v smere directionVector a rýchlosti speed.
+ * Predpokladá sa, že mesh je Physijs.Mesh.
  */
-export function moveDetectedObject(mesh, detectionBox, directionVector, speed)
+function moveDetectedObject(mesh, detectionBox, directionVector, speed)
 {
   let dirVec;
 
@@ -19,12 +13,9 @@ export function moveDetectedObject(mesh, detectionBox, directionVector, speed)
   {
     dirVec = directionVector.clone().normalize();
   }
-  else if
-  (
+  else if (
     typeof directionVector === 'object' &&
-    'x' in directionVector &&
-    'y' in directionVector &&
-    'z' in directionVector
+    'x' in directionVector && 'y' in directionVector && 'z' in directionVector
   )
   {
     dirVec = new THREE.Vector3(directionVector.x, directionVector.y, directionVector.z).normalize();
@@ -34,24 +25,18 @@ export function moveDetectedObject(mesh, detectionBox, directionVector, speed)
     dirVec = new THREE.Vector3(1, 0, 0); // defaultný smer
   }
 
-  // Získaj PhysicsBody z mapy
-  const physicsBody = meshToBodyMap.get(mesh);
-
-  if (!physicsBody)
+  if (!mesh.setLinearVelocity)
   {
-    console.warn('moveDetectedObject: PhysicsBody pre tento objekt nebol nájdený.');
+    //console.warn('moveDetectedObject: mesh nie je Physijs objekt.');
     return;
   }
 
-  // Nastav velocity a deaktivuj odpor (tlmenie) počas jazdy
-  physicsBody.velocity.copy(dirVec.multiplyScalar(speed));
-  physicsBody.linearDamping = 0; // žiadne spomaľovanie počas pohybu
+  mesh.setLinearVelocity(dirVec.multiplyScalar(speed));
+  mesh.setDamping(0, mesh.angularDamping ?? 0.5);
 
-  // Zapíš do mapy pohybu
-  movingObjectsMap.set(mesh,
-  {
+  movingObjectsMap.set(mesh, {
     detectionBox: detectionBox,
-    body: physicsBody
+    body: mesh
   });
 }
 
@@ -59,49 +44,36 @@ export function moveDetectedObject(mesh, detectionBox, directionVector, speed)
  * Sleduje pohybujúce sa objekty.
  * Ak objekt opustí detection box, spustí sa spomalenie (damping).
  */
-export function updateDetectedObjectsMovement(delta)
+function updateDetectedObjectsMovement(delta)
 {
   for (const [mesh, data] of movingObjectsMap.entries())
   {
     const { detectionBox, body } = data;
 
-    const inside = detectionBox.detection.checkContains(mesh);
+    const inside = detectionBox.contains(mesh);
 
-    // Ak objekt opustil detection box
-    if (inside === false)
+    if (!inside)
     {
-      // Nastav lineárne tlmenie, aby sa objekt prirodzene spomalil
-      body.linearDamping = 0.25;
+      body.setDamping(0.9, body.angularDamping ?? 0.5);
 
-      // Odstráň zo zoznamu pohybujúcich sa
-      movingObjectsMap.delete(mesh);
-
-      console.log(`Objekt ${mesh.name} opustil detection box, začína brzdiť.`);
+      if (body.getLinearVelocity().length() < 0.1)
+      {
+        stopMovingObject(mesh);
+      }
     }
-
-    // Žiadna priama manipulácia s pozíciou – o všetko sa stará fyzika
   }
 }
 
 /**
- * Zastaví pohyb objektu úplne – nastaví velocity na nulu.
- * Vhodné použiť, ak chceme objekt úplne „uzamknúť“.
+ * Zastaví objekt a odstráni ho z mapy pohybu.
  */
-export function stopMovingObject(mesh)
+function stopMovingObject(mesh)
 {
-  if (movingObjectsMap.has(mesh))
+  if (mesh.setLinearVelocity)
   {
-    const { body } = movingObjectsMap.get(mesh);
-
-    if (body)
-    {
-      // Úplne zastavíme pohyb
-      body.velocity.set(0, 0, 0);
-      body.linearDamping = 0.5; // ak by znovu nadobudol rýchlosť, rýchlo zastaví
-    }
-
-    movingObjectsMap.delete(mesh);
-
-    console.log(`Objekt ${mesh.name} bol úplne zastavený.`);
+    mesh.setLinearVelocity(new THREE.Vector3(0, 0, 0));
+    mesh.setDamping(0.9, mesh.angularDamping ?? 0.5);
   }
+
+  movingObjectsMap.delete(mesh);
 }

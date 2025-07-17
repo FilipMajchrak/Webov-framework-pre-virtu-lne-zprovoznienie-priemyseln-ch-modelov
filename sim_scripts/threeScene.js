@@ -1,36 +1,37 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
-import { createCamera, setupPointerLockControls } from './camera.js';
-import { SceneManager } from './SceneManager.js';
-import { Scene1} from './Scenes/Scene1.js';
-
-const clock = new THREE.Clock();
-
-const camera = createCamera();
-
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById('three-container').appendChild(renderer.domElement);
-
-const updateCameraPosition = setupPointerLockControls(camera, renderer);
-
-const sceneManager = new SceneManager(renderer, camera);
-
-// Načítaj Scene1
-sceneManager.loadScene(new Scene1(camera));
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-function animate()
+window.onload = function ()
 {
-  requestAnimationFrame(animate);
-  updateCameraPosition();
+  Physijs.scripts.worker = 'sim_scripts/physi/physijs_worker.js';
+  Physijs.scripts.ammo = 'sim_scripts/physi/ammo.js';
 
-  const deltaTime = clock.getDelta();
-  sceneManager.update(deltaTime);
-}
+  const clock = new THREE.Clock();
 
-animate();
+  const camera = createCamera();
+
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x252526); // nastav farbu pozadia
+  document.getElementById('three-container').appendChild(renderer.domElement);
+
+  const controls = setupPointerFlyControls(camera, renderer);
+
+  const sceneManager = new SceneManager(renderer, camera);
+  sceneManager.loadScene(new Scene1(camera));
+
+  window.addEventListener('resize', function ()
+  {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  function animate()
+  {
+    requestAnimationFrame(animate);
+    controls.updateCameraPosition();
+
+    const deltaTime = clock.getDelta();
+    sceneManager.update(deltaTime);
+  }
+
+  animate();
+};
