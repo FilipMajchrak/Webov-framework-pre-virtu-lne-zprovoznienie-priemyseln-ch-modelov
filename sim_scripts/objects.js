@@ -5,7 +5,7 @@ function degToRad(degrees)
 }
 
 // Nacitanie .OBJ modelu a vytvorenie fyzikalneho boxu ako obalky
-function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation = [0, 0, 0],mass = 0,friction = 0.8,restitution = 0.3,onLoaded = () => {}})
+function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation = [0, 0, 0],mass = 0,friction = 0.8,restitution = 0.3,onLoaded = () => {}}, name = '')
 {
   const loader = new THREE.OBJLoader();
 
@@ -32,6 +32,7 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
     obj.position.set(...position);
     obj.scale.set(...scale);
     obj.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+    obj.name = name;
 
     // pridaj vizuálny objekt
     scene.add(obj);
@@ -47,6 +48,7 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
     collider.position.copy(obj.position);
     collider.rotation.copy(obj.rotation);
     collider.scale.copy(obj.scale);
+    collider.name = name + '_Collider';
 
     scene.add(collider);
     showHitbox(obj, scene, collider); // Zobrazi zltu obalku
@@ -74,7 +76,7 @@ function createBoundingBoxMesh(object3D) {
 }
 
 // Vytvori staticku kocku (napr. podlahu) s nulovou hmotnostou
-function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size = [10, 1, 10],color = 0x555555,friction = 0.8,restitution = 0.3})
+function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size = [10, 1, 10],color = 0x555555,friction = 0.8,restitution = 0.3},name = '')
 {
   const geometry = new THREE.BoxGeometry(...size);
   const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }),friction,restitution);
@@ -82,6 +84,7 @@ function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size 
   const cubeStatic = new Physijs.BoxMesh(geometry, material, 0);
   cubeStatic.position.set(...position);
   cubeStatic.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cubeStatic.name = name;
 
   scene.add(cubeStatic);
   showHitbox(cubeStatic, scene); // Zobrazi zltu obalku
@@ -90,7 +93,7 @@ function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size 
 }
 
 // Vytvori dynamicku (padajucu) kocku s nenulovou hmotnostou
-function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],size = [1, 1, 1],color = 0xff0000,mass = 1,friction = 0.8,restitution = 0.3})
+function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],size = [1, 1, 1],color = 0xff0000,mass = 1,friction = 0.8,restitution = 0.3},name = '')
 {
   const geometry = new THREE.BoxGeometry(...size);
   const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }),friction,restitution);
@@ -98,6 +101,7 @@ function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],siz
   const cubeFalling = new Physijs.BoxMesh(geometry, material, mass);
   cubeFalling.position.set(...position);
   cubeFalling.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cubeFalling.name = name;
 
   scene.add(cubeFalling);
   showHitbox(cubeFalling, scene); // Zobrazi zltu obalku

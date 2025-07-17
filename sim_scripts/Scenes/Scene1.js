@@ -13,6 +13,7 @@ function Scene1(camera)
 
 Scene1.prototype.initScene = function ()
 {
+  this.detectedObjects = new Set(); // objekty, ktoré už boli detekované
   this.addLights();
   this.addHelpers();
 
@@ -23,17 +24,17 @@ Scene1.prototype.initScene = function ()
     scale: [0.01, 0.01, 0.01],
     rotation: [0, 0, 180],
     mass: 0,
-  });
+  },"Conv1");
 
   createStaticCube({
     scene: this.scene,
     position: [0, 8, 18],
     rotation: [0, 0, 0],
     size: [10, 1, 10],
-    color: 0x444444
-  });
+    color: 0x444444,
+  },"TestPlatform");
 
-  createFallingCube({
+  const { mesh: cube } = createFallingCube({
     scene: this.scene,
     position: [0, 15, 0],
     rotation: [0, 0, 0],
@@ -42,7 +43,20 @@ Scene1.prototype.initScene = function ()
     mass: 1,
     friction: 1,
     restitution: 1,
-  });
+  },"Cube1");
+  this.movingBodies.push(cube);
+
+    const { mesh: cube2 } = createFallingCube({
+    scene: this.scene,
+    position: [0, 16, 3],
+    rotation: [0, 0, 0],
+    size: [1, 1, 1],
+    color: 0xff0000,
+    mass: 1,
+    friction: 1,
+    restitution: 1,
+  },"Cube2");
+  this.movingBodies.push(cube2);
 
   this.detectionBox = createDetectionBox({
     width: 4,
@@ -81,6 +95,15 @@ Scene1.prototype.init = function ()
 
 Scene1.prototype.update = function (delta)
 {
+  this.updatables.push(() => {
+    for (const obj of this.movingBodies) {
+      if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj)) {
+        console.log('Objekt vošiel do detection boxu:',obj.name);
+        this.detectedObjects.add(obj); 
+      }
+    }
+  });
+
   for (const updateFn of this.updatables)
   {
     updateFn(delta);
