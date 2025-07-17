@@ -1,0 +1,36 @@
+.simulator-layout
+{
+  height: calc(100vh - 56px); /* 56px = výška navbaru, uprav podľa skutočnej výšky */
+  overflow: hidden;
+}
+
+.simulator-layout .split-container
+{
+  display: flex;
+  height: 100%;
+}
+
+.simulator-layout .toolbox
+{
+  width: 250px;
+  background: #1e1e1e;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.simulator-layout .main-panel
+{
+  flex: 1;
+  position: relative;
+}
+
+.simulator-layout #three-container
+{
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}

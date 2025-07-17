@@ -1,106 +1,116 @@
-window.onload = () => 
+window.onload = () =>
 {
-    let globalInput = {};
+    window.globalInput = {};
+    let initialGlobals = {};
     let loopId = null;
 
-    function renderGlobals(variables) 
+    function renderGlobals(variables)
     {
         const tableBody = document.querySelector("#globals-table tbody");
+        tableBody.innerHTML = "";
 
-        for (const [name, value] of Object.entries(variables)) 
+        for (const [name, value] of Object.entries(variables))
         {
-            let row = tableBody.querySelector(`tr[data-name="${name}"]`);
+            const row = document.createElement("tr");
+            row.dataset.name = name;
 
-            if (!row) 
+            if (typeof value === "boolean")
             {
-                row = document.createElement("tr");
-                row.dataset.name = name;
+                row.innerHTML = `
+                    <td class="align-middle">${name}</td>
+                    <td>
+                        <button 
+                            type="button" 
+                            class="btn btn-sm w-100"
+                            id="global-${name}"
+                            name="${name}"
+                            data-name="${name}">
+                        </button>
+                    </td>`;
 
-                if (typeof value === "boolean") 
-                {
-                    row.innerHTML = `
-                        <td class="align-middle">${name}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm w-100" data-name="${name}"></button>
-                        </td>`;
-
-                    const btn = row.querySelector("button");
-                    btn.addEventListener("click", () => 
-                    {
-                        globalInput[name] = !globalInput[name];
-                        updateBoolButton(btn, globalInput[name]);
-                    });
-                } 
-                else 
-                {
-                    row.innerHTML = `
-                        <td class="align-middle">${name}</td>
-                        <td>
-                            <input type="text" class="form-control form-control-sm" data-name="${name}">
-                        </td>`;
-
-                    const input = row.querySelector("input");
-                    input.addEventListener("input", e => 
-                    {
-                        const val = e.target.value;
-                        globalInput[name] = isNaN(val) ? val : parseFloat(val);
-                    });
-                }
-
-                tableBody.appendChild(row);
-            }
-
-            if (typeof value === "boolean") 
-            {
                 const btn = row.querySelector("button");
                 updateBoolButton(btn, value);
-            } 
-            else 
-            {
-                const input = row.querySelector("input");
-                if (document.activeElement !== input) 
+
+                btn.addEventListener("click", () =>
                 {
-                    input.value = value;
-                }
+                    window.globalInput[name] = !window.globalInput[name];
+                    updateBoolButton(btn, window.globalInput[name]);
+                });
             }
+            else
+            {
+                row.innerHTML = `
+                    <td class="align-middle">
+                        <label for="global-${name}" class="form-label mb-0">${name}</label>
+                    </td>
+                    <td>
+                        <input 
+                            type="text" 
+                            class="form-control form-control-sm"
+                            data-name="${name}"
+                            id="global-${name}"
+                            name="${name}">
+                    </td>`;
+
+                const input = row.querySelector("input");
+                input.value = value;
+
+                input.addEventListener("input", e =>
+                {
+                    window.globalInput[name] = isNaN(e.target.value) ? e.target.value : parseFloat(e.target.value);
+                });
+            }
+
+            tableBody.appendChild(row);
         }
     }
 
-    function updateBoolButton(btn, val) 
+    function updateBoolButton(btn, val)
     {
-        btn.classList.remove("btn-success", "btn-danger");
-        btn.classList.add("btn-sm");
-
-        if (val) 
+        if (val)
         {
+            btn.classList.remove("btn-danger");
             btn.classList.add("btn-success");
             btn.textContent = "TRUE";
-        } 
-        else 
+        }
+        else
         {
+            btn.classList.remove("btn-success");
             btn.classList.add("btn-danger");
             btn.textContent = "FALSE";
         }
     }
 
-    document.getElementById("run").addEventListener("click", () => 
+    document.getElementById("run").addEventListener("click", () =>
     {
         if (loopId) return;
 
-        //zamknutie editoru
         window.editor.setOption("readOnly", true);
 
-        loopId = setInterval(() => 
+        // Ulož snapshot pôvodného stavu
+        initialGlobals = JSON.parse(JSON.stringify(window.globalInput));
+
+        loopId = setInterval(() =>
         {
-            const code = window.editor.getValue();
-            const result = runST(code, globalInput);
+            try
+            {
+                const code = window.editor.getValue();
+                const result = runST(code, window.globalInput);
 
-            globalInput = { ...result.globalVariables };
+                window.globalInput = result.globalVariables;
 
-            renderGlobals(globalInput);
+                renderGlobals(window.globalInput);
 
-            document.getElementById("output").innerHTML =
-                "<pre>" + JSON.stringify(result.variables, null, 2) + "</pre>";
+                const outputDiv = document.getElementById("output");
+                outputDiv.innerHTML = "<pre>" + JSON.stringify({
+                    locals: result.variables,
+                    globals: result.globalVariables
+                }, null, 2) + "</pre>";
+            }
+            catch (e)
+            {
+                console.error("Chyba počas simulácie:", e);
+            }
         }, 500);
 
         const runBtn = document.getElementById("run");
@@ -108,13 +118,23 @@ window.onload = () =>
         runBtn.classList.add("btn-success");
     });
 
-    document.getElementById("stop").addEventListener("click", () => 
+    document.getElementById("stop").addEventListener("click", () =>
     {
         clearInterval(loopId);
         loopId = null;
 
-        //odomknutie editoru
         window.editor.setOption("readOnly", false);
+
+        // Obnov pôvodný stav
+        window.globalInput = JSON.parse(JSON.stringify(initialGlobals));
+
+        renderGlobals(window.globalInput);
+
+        const outputDiv = document.getElementById("output");
+        outputDiv.innerHTML = "<pre>" + JSON.stringify({
+            locals: {},
+            globals: window.globalInput
+        }, null, 2) + "</pre>";
 
         const runBtn = document.getElementById("run");
         runBtn.classList.remove("btn-success");

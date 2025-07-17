@@ -1,73 +1,108 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ST Simulátor</title>
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <!-- CodeMirror -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
 
-  <!-- Style -->
+  <!-- Tvoje štýly -->
   <link href="style/style.css" rel="stylesheet">
+  <link href="style/HMI.css" rel="stylesheet">
 </head>
 <body>
+
+  <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-    <a class="navbar-brand" href="index.html">
-      ST Simulátor
-    </a>
+    <a class="navbar-brand">ST Simulátor</a>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="index.html">Editor</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="test.html">Test režim</a>
-        </li>
+        <li class="nav-item"><a class="nav-link nav-tab" data-target="editor-view">Editor</a></li>
+        <li class="nav-item"><a class="nav-link nav-tab" data-target="hmi-view">HMI</a></li>
+        <li class="nav-item"><a class="nav-link nav-tab" href="simulator.html">Simulátor</a></li>
       </ul>
     </div>
   </nav>
 
-  <div class="split-container">
-    <div class="panel left-panel">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0">ST Kód</h6>
-        <div>
+  <!-- EDITOR VIEW -->
+  <div id="editor-view" class="view active">
+    <div class="split-container">
+      <div class="panel left-panel">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">ST Kód</h6>
+          <div>
             <button id="run" class="btn btn-sm btn-primary">▶ Simulovať</button>
             <button id="stop" class="btn btn-sm btn-danger">Zastaviť</button>
+          </div>
         </div>
+        <textarea id="editor">// ST kód sem...</textarea>
       </div>
 
-      <textarea id="editor">// ST kód sem...</textarea>
-    </div>
+      <div class="resizer-x" data-resize="x"></div>
 
-    <div id="h-resizer" data-resize="x"></div>
+      <div class="panel right-panel">
+        <div class="output-and-globals">
+          <h6 class="text-white">Výstup</h6>
+          <div id="output"></div>
 
-    <div class="panel right-panel">
-      <h6>Výstup</h6>
-      <div class="output-and-globals">
-        <div id="output"></div>
-        <div class="v-resizer" id="v-resizer" data-resize="y"></div>
-        <div class="globals-panel">
-          <h6>Globálne premenné</h6>
-          <table class="table table-dark table-bordered table-sm" id="globals-table">
-            <thead>
-              <tr><th>Názov</th><th>Hodnota</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+          <div class="v-resizer" data-resize="y"></div>
+
+          <div class="globals-panel">
+            <h6 class="text-white">Globálne premenné</h6>
+            <table class="table table-dark table-bordered table-sm" id="globals-table">
+              <thead>
+                <tr><th>Názov</th><th>Hodnota</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- HMI VIEW -->
+  <div id="hmi-view" class="view">
+    <div class="split-container">
+      <div class="toolbox">
+        <h6>Toolbox</h6>
+        <div class="inner">
+          <button class="btn btn-sm btn-outline-primary w-100 mb-1" data-type="button">Blok 1</button>
+        </div>
+      </div>
+
+      <div class="resizer-x" data-resize="x"></div>
+
+      <div class="right-panel">
+        <div class="inner" id="hmi-canvas"></div>
+      </div>
+
+      <div class="properties-panel" id="properties-panel">
+        <h6>Vlastnosti</h6>
+        <div class="inner">
+          <label>Text:</label>
+          <input type="text" id="prop-text" class="form-control form-control-sm">
+          
+          <label>Prepojiť s BOOL:</label>
+          <select id="prop-bool" class="form-select form-select-sm"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skripty -->
   <script src="scripts/editor.js"></script>
   <script src="scripts/compiler.js"></script>
   <script src="scripts/ui.js"></script>
   <script src="scripts/resize.js"></script>
+  <script src="scripts/HMI.js"></script>
+  <script src="scripts/view_switch.js"></script>
+
 </body>
 </html>

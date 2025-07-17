@@ -1,0 +1,98 @@
+.toolbox {
+  width: 160px;
+  min-width: 120px;
+  background-color: #1e1e1e;
+  border-right: 1px solid #444;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.hmi-page .split-container {
+    margin: 0;
+    padding: 0;
+}
+
+.hmi-page .right-panel {
+    padding: 0.5rem; /* len pre HMI */
+}
+
+.inner {
+    height: 100%;
+    background: #252526; /* o trochu svetlejšia ako right-panel */
+    padding: 0.5rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: monospace;
+    border: none; /* nie hrubý border, ak ho nepotrebuješ */
+    margin: 0;
+}
+
+.right-panel .inner {
+    position: relative;
+}
+
+.toolbox .inner {
+  flex: 1;
+  overflow-y: auto; /* len zvislý scroll ak treba */
+}
+
+.hmi-element {
+    position: absolute;
+}
+
+.hmi-element .resizer {
+    width: 10px;
+    height: 10px;
+    background: #00ff00;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    cursor: se-resize;
+}
+
+.hmi-element.selected {
+    outline: 2px solid lime;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  padding: 0.5rem;
+}
+
+#hmi-canvas {
+  flex: 1;
+  position: relative;
+  background: #252526;
+  padding: 0.5rem;
+}
+
+.properties-panel {
+  width: 200px;
+  background: #1e1e1e;
+  border-left: 1px solid #444;
+  padding: 0.5rem;
+  display: none; /* defaultne skrytá */
+}
+
+.properties-panel .inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.properties-panel label {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.properties-panel input {
+  width: 100%;
+}
+
+.hmi-element.selected {
+  outline: 2px solid lime;
+}

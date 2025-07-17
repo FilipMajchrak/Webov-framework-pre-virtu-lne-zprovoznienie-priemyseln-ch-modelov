@@ -8,6 +8,22 @@ html, body {
   overflow: hidden;
 }
 
+nav.navbar {
+  height: 56px;
+}
+
+.navbar .navbar-brand {
+  line-height: 56px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar .nav-link {
+  height: 56px;
+  display: flex;
+  align-items: center;
+}
+
 .split-container {
   display: flex;
   height: 100vh;
@@ -36,7 +52,6 @@ html, body {
   min-width: 200px;
   border-left: 1px solid #444;
   background-color: #1e1e1e;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -46,17 +61,22 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 100px;
+}
+
+.output-and-globals > h6 {
+  margin: 0 0 0.5rem 0;
 }
 
 #output {
   height: 50%;
+  min-height: 100px;
+  max-height: 80%;
+  flex: none; /* dôležité pre resizer */
   background: #252526;
+  border: 1px solid #333;
   padding: 0.5rem;
   overflow-y: auto;
   white-space: pre-wrap;
-  font-family: monospace;
-  border: 1px solid #333;
   margin-bottom: 0;
 }
 
@@ -64,10 +84,11 @@ html, body {
   height: 6px;
   background-color: #555;
   cursor: row-resize;
+  flex-shrink: 0;
   margin: 0;
 }
 
-#h-resizer {
+.resizer-x {
   width: 5px;
   background: #444;
   cursor: col-resize;
@@ -76,14 +97,15 @@ html, body {
 
 .globals-panel {
   flex: 1;
+  min-height: 50px;
   overflow: auto;
   background: #252526;
   padding: 0.5rem 0;
-  margin-top: 0;
+  margin: 0;
 }
 
 #globals-table {
-  flex: 1;
+  width: 100%;
   background: #252526;
   font-family: monospace;
   font-size: 14px;
@@ -103,12 +125,11 @@ html, body {
 }
 
 .CodeMirror-cursor {
-  border-left: 2px solid #00ff00 !important; /* Jasne zelený kurzor */
+  border-left: 2px solid #00ff00 !important;
 }
 
-
 .CodeMirror-selected {
-  background-color: #264f78 !important; /* Tmavomodre pozadie */
+  background-color: #264f78 !important;
 }
 
 .CodeMirror ::selection {
@@ -128,4 +149,13 @@ html, body {
 #run {
   z-index: 1;
   position: relative;
+}
+
+.view {
+  display: none;
+  height: calc(100vh - 56px);
+}
+
+.view.active {
+  display: flex;
 }
