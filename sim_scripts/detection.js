@@ -1,20 +1,7 @@
-function createDetectionBox({
-  width,
-  height,
-  depth,
-  scene,
-  position = [0, 0, 0],
-  color = 0x00ffff,
-  opacity = 0.2
-})
+function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color = 0x00ffff,opacity = 0.2})
 {
   const geometry = new THREE.BoxGeometry(width, height, depth);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    opacity,
-    transparent: true,
-    wireframe: true
-  });
+  const material = new THREE.MeshBasicMaterial({color,opacity,transparent: true,wireframe: true});
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.visible = false;
@@ -29,6 +16,7 @@ function createDetectionBox({
   }
 
   scene.add(mesh);
+
 
   const box3 = new THREE.Box3();
   let inside = false;
@@ -49,10 +37,8 @@ function createDetectionBox({
     return justEntered;
   }
 
-  return {
-    mesh,
-    box3,
-    update,
-    contains
-  };
+  const detection = { mesh, box3, update, contains};
+  showDetectionBox(detection, scene);
+
+  return {mesh,box3,update,contains};
 }

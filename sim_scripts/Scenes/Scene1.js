@@ -45,11 +45,11 @@ Scene1.prototype.initScene = function ()
   });
 
   this.detectionBox = createDetectionBox({
-    width: 3,
-    height: 3,
-    depth: 3,
+    width: 4,
+    height: 0.5,
+    depth: 25,
     scene: this.scene,
-    position: [0, 2, 0]
+    position: [-0.5, 9.5, 0]
   });
 
   this.updatables.push(() => this.detectionBox.update());
