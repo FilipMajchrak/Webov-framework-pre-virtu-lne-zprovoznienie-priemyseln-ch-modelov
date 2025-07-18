@@ -61,7 +61,7 @@ Scene1.prototype.initScene = function ()
   this.detectionBox = createDetectionBox({
     width: 4,
     height: 0.2,
-    depth: 25,
+    depth: 26,
     scene: this.scene,
     position: [-0.5, 9.2, 0],
     moveDirection: new THREE.Vector3(0, 0, 1), 
