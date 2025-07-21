@@ -8,33 +8,56 @@ function Scene1(camera)
   this.movingBodies = [];
   this.detectionZones = [];
 
+  this.ready = false;
+  this.loadedCount = 0;
+  this.expectedLoads = 1; // počet objektov, ktoré sa načítavajú
+
   this.initScene();
 }
 
 Scene1.prototype.initScene = function ()
 {
-  this.detectedObjects = new Set(); // objekty, ktoré už boli detekované
+  this.detectedObjects = new Set();
+
   this.addLights();
   this.addHelpers();
 
-  loadOBJModel({
+  loadOBJModel(
+  {
     scene: this.scene,
     url: 'obj/conv1.obj',
     position: [0, 5, 0],
     scale: [0.01, 0.01, 0.01],
     rotation: [0, 0, 180],
     mass: 0,
-  },"Conv1");
+    onLoaded: (obj, collider) =>
+    {
+      this.conv1 = obj;
+      this.conv1Body = collider;
 
-  createStaticCube({
+      const boundingMesh = createBoundingBoxMesh(obj);
+      this.scene.add(boundingMesh);
+      showHitbox(obj, this.scene, boundingMesh);
+
+      this.loadedCount++;
+      if (this.loadedCount === this.expectedLoads)
+      {
+        this.ready = true;
+      }
+    }
+  });
+
+  createStaticCube(
+  {
     scene: this.scene,
     position: [0, 8, 18],
     rotation: [0, 0, 0],
     size: [10, 1, 10],
-    color: 0x444444,
-  },"TestPlatform");
+    color: 0x444444
+  });
 
-  const { mesh: cube } = createFallingCube({
+  const { mesh: cube } = createFallingCube(
+  {
     scene: this.scene,
     position: [0, 10, 0],
     rotation: [0, 0, 0],
@@ -42,11 +65,13 @@ Scene1.prototype.initScene = function ()
     color: 0xff0000,
     mass: 1,
     friction: 1,
-    restitution: 0.1,
-  },"Cube1");
+    restitution: 0.1
+  }, "Cube1");
+
   this.movingBodies.push(cube);
 
-   const { mesh: cube2 } = createFallingCube({
+  const { mesh: cube2 } = createFallingCube(
+  {
     scene: this.scene,
     position: [0, 10, -2],
     rotation: [0, 0, 0],
@@ -54,31 +79,36 @@ Scene1.prototype.initScene = function ()
     color: 0xff0000,
     mass: 1,
     friction: 1,
-    restitution: 0.1,
-  },"Cube2");
+    restitution: 0.1
+  }, "Cube2");
+
   this.movingBodies.push(cube2);
 
-  this.detectionBox = createDetectionBox({
+  this.detectionBox = createDetectionBox(
+  {
     width: 4,
     height: 0.2,
     depth: 26,
     scene: this.scene,
     position: [-0.5, 9.2, 0],
-    moveDirection: new THREE.Vector3(0, 0, 1), 
+    moveDirection: new THREE.Vector3(0, 0, 1),
     moveSpeed: 3
   });
 
   this.updatables.push(() => this.detectionBox.update());
 
-  this.updatables.push(() => {
-    for (const obj of this.movingBodies) {
+  this.updatables.push(() =>
+  {
+    for (const obj of this.movingBodies)
+    {
       if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj))
       {
-        console.log('Objekt vošiel do detection boxu:',obj.name);
+        console.log('Objekt vošiel do detection boxu:', obj.name);
         moveDetectedObject(obj, this.detectionBox);
         this.detectedObjects.add(obj);
       }
     }
+
     updateDetectedObjectsMovement();
   });
 };
@@ -109,6 +139,11 @@ Scene1.prototype.init = function ()
 
 Scene1.prototype.update = function (delta)
 {
+  if (!this.ready)
+  {
+    return;
+  }
+
   for (const updateFn of this.updatables)
   {
     updateFn(delta);
