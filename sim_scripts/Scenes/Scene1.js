@@ -36,24 +36,36 @@ Scene1.prototype.initScene = function ()
 
   const { mesh: cube } = createFallingCube({
     scene: this.scene,
-    position: [0, 11, 0],
+    position: [0, 10, 0],
     rotation: [0, 0, 0],
     size: [1, 1, 1],
     color: 0xff0000,
     mass: 1,
     friction: 1,
-    restitution: 0.5,
+    restitution: 0.1,
   },"Cube1");
   this.movingBodies.push(cube);
 
+   const { mesh: cube2 } = createFallingCube({
+    scene: this.scene,
+    position: [0, 10, -2],
+    rotation: [0, 0, 0],
+    size: [1, 1, 1],
+    color: 0xff0000,
+    mass: 1,
+    friction: 1,
+    restitution: 0.1,
+  },"Cube2");
+  this.movingBodies.push(cube2);
+
   this.detectionBox = createDetectionBox({
     width: 4,
-    height: 0.5,
-    depth: 25,
+    height: 0.2,
+    depth: 26,
     scene: this.scene,
-    position: [-0.5, 9.3, 0],
+    position: [-0.5, 9.2, 0],
     moveDirection: new THREE.Vector3(0, 0, 1), 
-    moveSpeed: 5
+    moveSpeed: 3
   });
 
   this.updatables.push(() => this.detectionBox.update());
