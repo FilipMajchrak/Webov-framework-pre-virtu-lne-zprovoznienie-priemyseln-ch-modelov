@@ -76,17 +76,43 @@ function updateDetectedObjectsMovement(delta)
 
     const inside = detectionBox.isInside(mesh);
 
+    // Dynamické vyhodnotenie vstupnej podmienky
+    let conveyorEnabled = true;
+
+    if (typeof detectionBox.inputCondition === 'string')
+    {
+      const inputKey = detectionBox.inputCondition;
+      conveyorEnabled = IO.inputs?.[inputKey] === true;
+    }
+
     if (inside)
     {
       const velocity = body.getLinearVelocity();
 
-      // Zachová vertikálnu rýchlosť (napr. pád) a udržiava horizontálnu zložku
-      const newVelocity = new THREE.Vector3(direction.x * speed,velocity.y,direction.z * speed);
-      body.setLinearVelocity(newVelocity);
-      body.setDamping(0, body.angularDamping ?? 0.5);
+      if (conveyorEnabled)
+      {
+        const newVelocity = new THREE.Vector3(
+          direction.x * speed,
+          velocity.y,
+          direction.z * speed
+        );
+        body.setLinearVelocity(newVelocity);
+        body.setDamping(0, body.angularDamping ?? 0.5);
+      }
+      else
+      {
+        // Zníž rýchlosť až po úplné zastavenie
+        body.setDamping(0.9, body.angularDamping ?? 0.5);
+
+        if (velocity.length() < 0.1)
+        {
+          stopMovingObject(mesh);
+        }
+      }
     }
     else
     {
+      // Mimo zóny → spomaľ automaticky
       body.setDamping(0.9, body.angularDamping ?? 0.5);
 
       if (body.getLinearVelocity().length() < 0.1)
@@ -94,9 +120,9 @@ function updateDetectedObjectsMovement(delta)
         stopMovingObject(mesh);
       }
     }
-
   }
 }
+
 
 /**
  * Zastaví objekt a odstráni ho z mapy pohybu.
@@ -110,4 +136,10 @@ function stopMovingObject(mesh)
   }
 
   movingObjectsMap.delete(mesh);
+
+  // Odstráň z aktivovaných objektov, ak existuje globálny scene1
+  if (typeof scene1 !== "undefined" && scene1.activatedObjects instanceof Set)
+  {
+    scene1.activatedObjects.delete(mesh);
+  }
 }
