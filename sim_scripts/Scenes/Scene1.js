@@ -3,7 +3,7 @@ window.IO = {
     conv: false
   },
   outputs: {
-    conveyorRunning: false,
+    conveStat: false,
     pistonExtended: false,
     alarm: false
   }
@@ -131,6 +131,7 @@ Scene1.prototype.initScene = function ()
       }
     }
 
+    IO.outputs.conveStat = IO.inputs.conv;
     updateDetectedObjectsMovement();
   });
 };
