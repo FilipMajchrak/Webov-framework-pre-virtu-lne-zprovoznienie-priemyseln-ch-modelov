@@ -11,12 +11,10 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
 
   loader.load(url, function (obj)
   {
-    // Ziskaj stred bounding boxu na centrovanie
     const box = new THREE.Box3().setFromObject(obj);
     const center = new THREE.Vector3();
     box.getCenter(center);
 
-    // Nastav material a posun meshe tak, aby boli centrovane
     obj.traverse(function (child)
     {
       if (child.isMesh)
@@ -28,16 +26,13 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
       }
     });
 
-    
     obj.position.set(...position);
     obj.scale.set(...scale);
     obj.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
     obj.name = name;
 
-    // pridaj vizuálny objekt
     scene.add(obj);
 
-    // Vytvor fyzikalny collider s rovnakym rozmerom ako bounding box
     const size = new THREE.Vector3();
     box.getSize(size);
 
@@ -51,15 +46,15 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
     collider.name = name + '_Collider';
 
     scene.add(collider);
-    showHitbox(obj, scene, collider); // Zobrazi zltu obalku
+    showHitbox(obj, scene, collider);
 
     onLoaded(obj, collider);
   });
 }
 
 // Vytvori bounding box mesh (vizualny alebo referencny)
-// Tento mesh nie je fyzikalne telo – je len reprezentaciou objemu objektu
-function createBoundingBoxMesh(object3D) {
+function createBoundingBoxMesh(object3D)
+{
   const box = new THREE.Box3().setFromObject(object3D);
   const size = new THREE.Vector3();
   const center = new THREE.Vector3();
@@ -67,7 +62,7 @@ function createBoundingBoxMesh(object3D) {
   box.getCenter(center);
 
   const geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-  const material = new THREE.MeshBasicMaterial({visible:false});
+  const material = new THREE.MeshBasicMaterial({ visible: false });
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.copy(center);
@@ -75,7 +70,7 @@ function createBoundingBoxMesh(object3D) {
   return mesh;
 }
 
-// Vytvori staticku kocku (napr. podlahu) s nulovou hmotnostou
+// Staticka kocka
 function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size = [10, 1, 10],color = 0x555555,friction = 0.8,restitution = 0.3},name = '')
 {
   const geometry = new THREE.BoxGeometry(...size);
@@ -87,12 +82,12 @@ function createStaticCube({scene,position = [0, 0, 0],rotation = [0, 0, 0],size 
   cubeStatic.name = name;
 
   scene.add(cubeStatic);
-  showHitbox(cubeStatic, scene); // Zobrazi zltu obalku
+  showHitbox(cubeStatic, scene);
 
   return { mesh: cubeStatic, body: cubeStatic };
 }
 
-// Vytvori dynamicku (padajucu) kocku s nenulovou hmotnostou
+// Padajuca kocka
 function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],size = [1, 1, 1],color = 0xff0000,mass = 1,friction = 0.8,restitution = 0.3},name = '')
 {
   const geometry = new THREE.BoxGeometry(...size);
@@ -105,7 +100,28 @@ function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],siz
   cubeFalling.name = name;
 
   scene.add(cubeFalling);
-  showHitbox(cubeFalling, scene); // Zobrazi zltu obalku
+  showHitbox(cubeFalling, scene);
 
   return { mesh: cubeFalling, body: cubeFalling };
+}
+
+// Padajuci cylinder
+function createFallingCylinder(
+{scene,position = [0, 20, 0],rotation = [0, 0, 0],radiusTop = 1,radiusBottom = 1,height = 2,radialSegments = 16,color = 0x00ff00,mass = 1,friction = 0.8,restitution = 0.3}, name = '')
+{
+  const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+  const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }), friction, restitution);
+
+  const cylinder = new Physijs.CylinderMesh(geometry, material, mass);
+  cylinder.position.set(...position);
+  cylinder.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  cylinder.setAngularFactor(new THREE.Vector3(0, 1, 0)); // otáčanie okolo Y
+  cylinder.setLinearFactor(new THREE.Vector3(1, 0, 1)); // pohyb v XZ
+  cylinder.name = name;
+
+  scene.add(cylinder);
+  showHitbox(cylinder, scene);
+  showDetectionProxyBox(cylinder, scene);
+
+  return { mesh: cylinder, body: cylinder };
 }

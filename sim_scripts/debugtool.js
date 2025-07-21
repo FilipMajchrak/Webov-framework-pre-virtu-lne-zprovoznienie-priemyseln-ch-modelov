@@ -124,6 +124,65 @@ window.toggleHitbox = function (state, index = null) {
   }
 };
 
+function showDetectionProxyBox(object3D, scene, options = {})
+{
+  const box = new THREE.Box3().setFromObject(object3D);
+  const color = options.color ?? 0x00ffff;
+  const opacity = options.opacity ?? 0.3;
+
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshBasicMaterial({
+    color: color,
+    wireframe: true,
+    transparent: true,
+    opacity: opacity,
+    depthWrite: false
+  });
+
+  const proxyMesh = new THREE.Mesh(geometry, material);
+  proxyMesh.visible = defaultToggle;
+  scene.add(proxyMesh);
+
+  function update()
+  {
+    object3D.updateMatrixWorld(true);
+    box.setFromObject(object3D);
+
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    proxyMesh.geometry.dispose();
+    proxyMesh.geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+    proxyMesh.position.copy(center);
+  }
+
+  const helpers = {
+    helper: proxyMesh,
+    update,
+    setVisible(visible)
+    {
+      proxyMesh.visible = visible;
+    },
+    dispose()
+    {
+      scene.remove(proxyMesh);
+      proxyMesh.geometry.dispose?.();
+      proxyMesh.material.dispose?.();
+      const index = allHitboxes.indexOf(helpers);
+      if (index !== -1) allHitboxes.splice(index, 1);
+    }
+  };
+
+  allHitboxes.push(helpers);
+  helpers.update();
+
+  console.log('[DEBUG] showDetectionProxyBox registered:', helpers);
+  return helpers;
+}
+
+
 // Priebežná aktualizácia všetkých hitboxov (aj detection boxov)
 function updateAllHitboxes() {
   for (const h of allHitboxes) {

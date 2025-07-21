@@ -56,33 +56,47 @@ Scene1.prototype.initScene = function ()
     color: 0x444444
   });
 
-  const { mesh: cube } = createFallingCube(
+  //const { mesh: cube } = createFallingCube(
+  //{
+  //  scene: this.scene,
+  //  position: [0, 10, 0],
+  //  rotation: [0, 0, 0],
+  //  size: [1, 1, 1],
+  //  color: 0xff0000,
+  //  mass: 1,
+  //  friction: 1,
+  //  restitution: 0.1
+  //}, "Cube1");
+  //this.movingBodies.push(cube);
+
+  //const { mesh: cube2 } = createFallingCube(
+  //{
+  //  scene: this.scene,
+  //  position: [0, 10, -2],
+  //  rotation: [0, 0, 0],
+  //  size: [1, 1, 1],
+  //  color: 0xff0000,
+  //  mass: 1,
+  //  friction: 1,
+  //  restitution: 0.1
+  //}, "Cube2");
+  //this.movingBodies.push(cube2);
+
+  const { mesh: cylinder } = createFallingCylinder(
   {
     scene: this.scene,
-    position: [0, 10, 0],
-    rotation: [0, 0, 0],
-    size: [1, 1, 1],
-    color: 0xff0000,
+    position: [0, 11, -10],
+    rotation: [90, 0, 0], // otočený horizontálne, ak chceš
+    radiusTop: 0.5,
+    radiusBottom: 0.5,
+    height: 5,
+    radialSegments: 24,
+    color: 0x0077ff,
     mass: 1,
-    friction: 1,
-    restitution: 0.1
-  }, "Cube1");
-
-  this.movingBodies.push(cube);
-
-  const { mesh: cube2 } = createFallingCube(
-  {
-    scene: this.scene,
-    position: [0, 10, -2],
-    rotation: [0, 0, 0],
-    size: [1, 1, 1],
-    color: 0xff0000,
-    mass: 1,
-    friction: 1,
-    restitution: 0.1
-  }, "Cube2");
-
-  this.movingBodies.push(cube2);
+    friction: 0.9,
+    restitution: 0.2
+  },"Cylinder")
+  this.movingBodies.push(cylinder);
 
   this.detectionBox = createDetectionBox(
   {
@@ -101,6 +115,13 @@ Scene1.prototype.initScene = function ()
   {
     for (const obj of this.movingBodies)
     {
+      // 👇 ak má objekt detectionTarget (napr. cylinder), synchronizuj jeho pozíciu
+      if (obj.userData.detectionTarget)
+      {
+        obj.userData.detectionTarget.position.copy(obj.position);
+        obj.userData.detectionTarget.rotation.copy(obj.rotation);
+      }
+
       if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj))
       {
         console.log('Objekt vošiel do detection boxu:', obj.name);
