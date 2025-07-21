@@ -1,5 +1,4 @@
-function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color = 0x00ffff,opacity = 0.2,moveDirection = new THREE.Vector3(1, 0, 0),moveSpeed = 5
-})
+function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color = 0x00ffff,opacity = 0.2,moveDirection = new THREE.Vector3(1, 0, 0),moveSpeed = 5,inputCondition = null})
 {
   const geometry = new THREE.BoxGeometry(width, height, depth);
   const material = new THREE.MeshBasicMaterial({color,opacity,transparent: true,wireframe: true});
@@ -63,7 +62,7 @@ function createDetectionBox({width,height,depth,scene,position = [0, 0, 0],color
     return box3.intersectsBox(objectBox);
   }
 
-  const detection = {mesh,box3,update,contains,isInside,moveDirection,moveSpeed};
+  const detection = {mesh,box3,update,contains,isInside,moveDirection,moveSpeed,inputCondition};
 
   showDetectionBox(detection, scene);
   return detection;

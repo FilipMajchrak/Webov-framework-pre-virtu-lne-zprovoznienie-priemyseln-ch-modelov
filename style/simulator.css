@@ -34,3 +34,20 @@
   right: 0;
   bottom: 0;
 }
+
+.io-table-wrapper table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.io-table-wrapper th, .io-table-wrapper td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

@@ -30,6 +30,7 @@
   <script src="sim_scripts/detection.js"></script>
   <script src="sim_scripts/action_objects/conv.js"></script>
   <script src="sim_scripts/debugtool.js"></script>
+
 </head>
 
 <body>
@@ -47,7 +48,17 @@
       <!-- Ľavý panel -->
       <div class="toolbox">
         <div class="inner">
-          <h5 class="text-light mb-3 text-center">Nastavenia</h5>
+          <div class="io-table-wrapper flex-grow-1 d-flex flex-column">
+            <h6 class="text-light">I/O Premenné</h6>
+            <div class="flex-grow-1 overflow-auto">
+              <table class="table table-dark table-sm table-bordered mb-0" id="io-table">
+                <thead>
+                  <tr><th>Názov</th><th>Typ</th><th>Hodnota</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -60,5 +71,6 @@
 
   <!-- Načítanie hlavnej scény po načítaní DOM -->
   <script src="sim_scripts/threeScene.js"></script>
+  <script src="sim_scripts/IOpanel.js"></script
 </body>
 </html>

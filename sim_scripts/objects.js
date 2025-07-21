@@ -106,22 +106,37 @@ function createFallingCube({scene,position = [0, 20, 0],rotation = [0, 0, 0],siz
 }
 
 // Padajuci cylinder
-function createFallingCylinder(
-{scene,position = [0, 20, 0],rotation = [0, 0, 0],radiusTop = 1,radiusBottom = 1,height = 2,radialSegments = 16,color = 0x00ff00,mass = 1,friction = 0.8,restitution = 0.3}, name = '')
+function createFallingCylinder({scene,position = [0, 20, 0],rotation = [0, 0, 0],radiusTop = 1,radiusBottom = 1,height = 2,radialSegments = 16,color = 0x00ff00,mass = 1,friction = 0.8,restitution = 0.3}, name = '')
 {
-  const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
-  const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ color }), friction, restitution);
+  //Vizuálna geometria – valec
+  const visualGeometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, radialSegments);
+  const visualMaterial = new THREE.MeshStandardMaterial({ color });
+  const visual = new THREE.Mesh(visualGeometry, visualMaterial);
+  visual.rotation.set(degToRad(rotation[0]), degToRad(rotation[1]), degToRad(rotation[2]));
+  scene.add(visual);
 
-  const cylinder = new Physijs.CylinderMesh(geometry, material, mass);
-  cylinder.position.set(...position);
-  cylinder.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
-  cylinder.setAngularFactor(new THREE.Vector3(0, 1, 0)); // otáčanie okolo Y
-  cylinder.setLinearFactor(new THREE.Vector3(1, 0, 1)); // pohyb v XZ
-  cylinder.name = name;
+  //Kolízna geometria – box s rovnakou veľkosťou
+  const boxGeometry = new THREE.BoxGeometry(radiusTop * 2, height, radiusTop * 2);
+  const physMaterial = Physijs.createMaterial(new THREE.MeshStandardMaterial({ visible: false }), friction, restitution);
+  const collider = new Physijs.BoxMesh(boxGeometry, physMaterial, mass);
+  collider.position.set(...position);
+  collider.rotation.set(degToRad(rotation[0]), degToRad(rotation[1]), degToRad(rotation[2]));
+  collider.setAngularFactor(new THREE.Vector3(0, 1, 0));
+  collider.setLinearFactor(new THREE.Vector3(1, 0, 1));
+  collider.name = name;
 
-  scene.add(cylinder);
-  showHitbox(cylinder, scene);
-  showDetectionProxyBox(cylinder, scene);
+  //Synchronizácia vizuálu s telom
+  collider.userData.syncVisual = () =>
+  {
+    visual.position.copy(collider.position);
+    visual.quaternion.copy(collider.quaternion);
+  };
 
-  return { mesh: cylinder, body: cylinder };
+  //Debug & detection
+  showHitbox(collider, scene);
+  showDetectionProxyBox(collider, scene);
+
+  scene.add(collider);
+
+  return { mesh: collider, body: collider };
 }

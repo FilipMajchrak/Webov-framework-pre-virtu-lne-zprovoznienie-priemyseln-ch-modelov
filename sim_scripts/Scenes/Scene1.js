@@ -1,3 +1,14 @@
+window.IO = {
+  inputs: {
+    conv: false
+  },
+  outputs: {
+    conveyorRunning: false,
+    pistonExtended: false,
+    alarm: false
+  }
+};
+
 function Scene1(camera)
 {
   this.scene = new Physijs.Scene();
@@ -10,14 +21,14 @@ function Scene1(camera)
 
   this.ready = false;
   this.loadedCount = 0;
-  this.expectedLoads = 1; // počet objektov, ktoré sa načítavajú
+  this.expectedLoads = 1;
 
   this.initScene();
 }
 
 Scene1.prototype.initScene = function ()
 {
-  this.detectedObjects = new Set();
+  this.activatedObjects = new Set(); // sleduje len objekty, ktoré sa reálne pohli
 
   this.addLights();
   this.addHelpers();
@@ -56,37 +67,24 @@ Scene1.prototype.initScene = function ()
     color: 0x444444
   });
 
-  //const { mesh: cube } = createFallingCube(
-  //{
-  //  scene: this.scene,
-  //  position: [0, 10, 0],
-  //  rotation: [0, 0, 0],
-  //  size: [1, 1, 1],
-  //  color: 0xff0000,
-  //  mass: 1,
-  //  friction: 1,
-  //  restitution: 0.1
-  //}, "Cube1");
-  //this.movingBodies.push(cube);
-
-  //const { mesh: cube2 } = createFallingCube(
-  //{
-  //  scene: this.scene,
-  //  position: [0, 10, -2],
-  //  rotation: [0, 0, 0],
-  //  size: [1, 1, 1],
-  //  color: 0xff0000,
-  //  mass: 1,
-  //  friction: 1,
-  //  restitution: 0.1
-  //}, "Cube2");
-  //this.movingBodies.push(cube2);
+  const { mesh: cube } = createFallingCube(
+  {
+    scene: this.scene,
+    position: [0, 10, 0],
+    rotation: [0, 0, 0],
+    size: [1, 1, 1],
+    color: 0xff0000,
+    mass: 1,
+    friction: 1,
+    restitution: 0.1
+  }, "Cube1");
+  this.movingBodies.push(cube);
 
   const { mesh: cylinder } = createFallingCylinder(
   {
     scene: this.scene,
     position: [0, 11, -10],
-    rotation: [90, 0, 0], // otočený horizontálne, ak chceš
+    rotation: [90, 0, 0],
     radiusTop: 0.5,
     radiusBottom: 0.5,
     height: 5,
@@ -95,7 +93,7 @@ Scene1.prototype.initScene = function ()
     mass: 1,
     friction: 0.9,
     restitution: 0.2
-  },"Cylinder")
+  }, "Cylinder");
   this.movingBodies.push(cylinder);
 
   this.detectionBox = createDetectionBox(
@@ -106,27 +104,30 @@ Scene1.prototype.initScene = function ()
     scene: this.scene,
     position: [-0.5, 9.2, 0],
     moveDirection: new THREE.Vector3(0, 0, 1),
-    moveSpeed: 3
+    moveSpeed: 3,
+    inputCondition: "conv"
   });
-
-  this.updatables.push(() => this.detectionBox.update());
 
   this.updatables.push(() =>
   {
     for (const obj of this.movingBodies)
     {
-      // 👇 ak má objekt detectionTarget (napr. cylinder), synchronizuj jeho pozíciu
-      if (obj.userData.detectionTarget)
-      {
-        obj.userData.detectionTarget.position.copy(obj.position);
-        obj.userData.detectionTarget.rotation.copy(obj.rotation);
-      }
+      obj.userData?.syncVisual?.();
 
-      if (!this.detectedObjects.has(obj) && this.detectionBox.contains(obj))
+      const isActivated = this.activatedObjects.has(obj);
+
+      const target = obj.userData?.detectionTarget ?? obj;
+      const objectBox = new THREE.Box3().setFromObject(target);
+      const isStillInside = this.detectionBox.box3.intersectsBox(objectBox);
+
+      const conditionKey = this.detectionBox.inputCondition;
+      const isEnabled = typeof conditionKey === "string" ? IO.inputs?.[conditionKey] === true : true;
+
+      // Objekt je v zóne, nie je aktívny a podmienka je splnená → aktivuj
+      if (isStillInside && isEnabled)
       {
-        console.log('Objekt vošiel do detection boxu:', obj.name);
         moveDetectedObject(obj, this.detectionBox);
-        this.detectedObjects.add(obj);
+        this.activatedObjects.add(obj);
       }
     }
 
