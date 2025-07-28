@@ -1,14 +1,18 @@
 window.IO = {
   inputs: {
     conv: false,
-    conv2: false
+    conv2: false,
+    p1:false,
+    p2:false,
+    p3:false
   },
   outputs: {
-    conveStat: false,
-    pistonExtended: false,
     s1: false,
     s2: false,
-    s3: false
+    s3: false,
+    p1: false,
+    p2: false,
+    p3: false
   }
 };
 
@@ -124,6 +128,52 @@ Scene1.prototype.initScene = function ()
   }, "Cylinder");
   this.movingBodies.push(cylinder);
 
+  const piston1 = createPiston(this.scene,
+  {
+    name: "P1",
+    position: [6, 10, 18],
+    size: [5, 1, 1],
+    color: 0x00ff00,
+    direction: [-1, 0, 0], 
+    moveDistance: 6,
+    speed: 2,
+    getInputFn: () => IO.inputs.p1,
+    setOutputFn: (v) => IO.outputs.p1 = v,
+    affectedObjects: this.movingBodies 
+  });
+  this.updatables.push(piston1.update);
+
+  const piston2 = createPiston(this.scene,
+  {
+    name: "P2",
+    position: [6, 10, 33],
+    size: [5, 1, 1],
+    color: 0x00ff00,
+    direction: [-1, 0, 0], 
+    moveDistance: 6,
+    speed: 2,
+    getInputFn: () => IO.inputs.p2,
+    setOutputFn: (v) => IO.outputs.p2 = v,
+    affectedObjects: this.movingBodies 
+  });
+  this.updatables.push(piston2.update);
+
+  const piston3 = createPiston(this.scene,
+  {
+    name: "P3",
+    position: [6, 10, 48],
+    size: [5, 1, 1],
+    color: 0x00ff00,
+    direction: [-1, 0, 0], 
+    moveDistance: 6,
+    speed: 2,
+    getInputFn: () => IO.inputs.p3,
+    setOutputFn: (v) => IO.outputs.p3 = v,
+    affectedObjects: this.movingBodies 
+  });
+  this.updatables.push(piston3.update);
+
+
   this.detectionBox = createDetectionBox(
   {
     width: 4,
@@ -215,7 +265,6 @@ Scene1.prototype.initScene = function ()
     }
 
     [this.raySensor, this.raySensor2, this.raySensor3].forEach(sensor => sensor.update());
-    IO.outputs.conveStat = IO.inputs.conv;
     updateDetectedObjectsMovement();
   });
 };
