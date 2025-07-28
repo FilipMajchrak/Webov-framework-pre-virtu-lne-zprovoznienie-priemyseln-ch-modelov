@@ -53,8 +53,6 @@ Tento projekt predstavuje interaktívny 3D simulátor vytvorený pomocou knižni
 
 ## 📘 Poznámky pre ďalší vývoj
 
-- Možnosť pridať animované stroje, ventily alebo manipulátory
-- Import ďalších `.obj` modelov
 - Prepojenie so skutočným PLC simulátorom alebo digitálnym dvojčaťom
 
 ---
