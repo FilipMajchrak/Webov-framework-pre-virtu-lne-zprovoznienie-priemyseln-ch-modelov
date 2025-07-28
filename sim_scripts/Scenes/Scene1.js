@@ -1,11 +1,14 @@
 window.IO = {
   inputs: {
-    conv: false
+    conv: false,
+    conv2: false
   },
   outputs: {
     conveStat: false,
     pistonExtended: false,
-    alarm: false
+    s1: false,
+    s2: false,
+    s3: false
   }
 };
 
@@ -58,27 +61,52 @@ Scene1.prototype.initScene = function ()
     }
   });
 
-  createStaticCube(
+  loadOBJModel(
   {
     scene: this.scene,
-    position: [0, 8, 18],
+    url: 'obj/conv2.obj',
+    position: [-0.5, 5, 36],
+    scale: [0.1, 0.1, 0.1],
     rotation: [0, 0, 0],
-    size: [10, 1, 10],
-    color: 0x444444
+    mass: 0,
+    onLoaded: (obj, collider) =>
+    {
+      this.conv1 = obj;
+      this.conv1Body = collider;
+
+      const boundingMesh = createBoundingBoxMesh(obj);
+      this.scene.add(boundingMesh);
+      showHitbox(obj, this.scene, boundingMesh);
+
+      this.loadedCount++;
+      if (this.loadedCount === this.expectedLoads)
+      {
+        this.ready = true;
+      }
+    }
   });
 
-  const { mesh: cube } = createFallingCube(
-  {
-    scene: this.scene,
-    position: [0, 10, 0],
-    rotation: [0, 0, 0],
-    size: [1, 1, 1],
-    color: 0xff0000,
-    mass: 1,
-    friction: 1,
-    restitution: 0.1
-  }, "Cube1");
-  this.movingBodies.push(cube);
+  //createStaticCube(
+  //{
+  //  scene: this.scene,
+  //  position: [0, 8, 18],
+  //  rotation: [0, 0, 0],
+  //  size: [10, 1, 10],
+  //  color: 0x444444
+  //});
+
+  //const { mesh: cube } = createFallingCube(
+  //{
+  //  scene: this.scene,
+  //  position: [0, 10, 0],
+  //  rotation: [0, 0, 0],
+  //  size: [1, 1, 1],
+  //  color: 0xff0000,
+  //  mass: 1,
+  //  friction: 1,
+  //  restitution: 0.1
+  //}, "Cube1");
+  //this.movingBodies.push(cube);
 
   const { mesh: cylinder } = createFallingCylinder(
   {
@@ -108,29 +136,85 @@ Scene1.prototype.initScene = function ()
     inputCondition: "conv"
   });
 
+  this.detectionBox2 = createDetectionBox(
+  {
+    width: 5,
+    height: 0.2,
+    depth: 46,
+    scene: this.scene,
+    position: [-0.5, 9.2, 36],
+    moveDirection: new THREE.Vector3(0, 0, 1),
+    moveSpeed: 3,
+    inputCondition: "conv2"
+  });
+
+  this.raySensor = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 20),
+    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.s1 = true,
+    onClear: () => IO.outputs.s1 = false
+  });
+
+  this.raySensor2 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 35),
+    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.s2 = true,
+    onClear: () => IO.outputs.s2 = false
+  });
+
+  this.raySensor3 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 50),
+    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.s3 = true,
+    onClear: () => IO.outputs.s3 = false
+  });
+
+
+
   this.updatables.push(() =>
   {
     for (const obj of this.movingBodies)
     {
       obj.userData?.syncVisual?.();
 
-      const isActivated = this.activatedObjects.has(obj);
-
       const target = obj.userData?.detectionTarget ?? obj;
       const objectBox = new THREE.Box3().setFromObject(target);
-      const isStillInside = this.detectionBox.box3.intersectsBox(objectBox);
 
-      const conditionKey = this.detectionBox.inputCondition;
-      const isEnabled = typeof conditionKey === "string" ? IO.inputs?.[conditionKey] === true : true;
+      // detectionBox1 – základné správanie
+      const isInBox1 = this.detectionBox.box3.intersectsBox(objectBox);
+      const isBox1Enabled = IO.inputs.conv;
 
-      // Objekt je v zóne, nie je aktívny a podmienka je splnená → aktivuj
-      if (isStillInside && isEnabled)
+      if (isInBox1 && isBox1Enabled)
       {
         moveDetectedObject(obj, this.detectionBox);
         this.activatedObjects.add(obj);
       }
+
+      // detectionBox2 – zatiaľ rovnaké správanie
+      const isInBox2 = this.detectionBox2.box3.intersectsBox(objectBox);
+      const isBox2Enabled = IO.inputs.conv2;
+
+      if (isInBox2 && isBox2Enabled)
+      {
+        moveDetectedObject(obj, this.detectionBox2);
+        this.activatedObjects.add(obj);
+      }
+
     }
 
+    [this.raySensor, this.raySensor2, this.raySensor3].forEach(sensor => sensor.update());
     IO.outputs.conveStat = IO.inputs.conv;
     updateDetectedObjectsMovement();
   });
@@ -148,7 +232,7 @@ Scene1.prototype.addLights = function ()
 
 Scene1.prototype.addHelpers = function ()
 {
-  const gridHelper = new THREE.GridHelper(100, 100);
+  const gridHelper = new THREE.GridHelper(300, 300);
   gridHelper.material.depthWrite = false;
   gridHelper.material.opacity = 0.3;
   gridHelper.material.transparent = true;

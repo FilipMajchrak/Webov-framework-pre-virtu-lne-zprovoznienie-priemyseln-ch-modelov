@@ -1,4 +1,5 @@
 const allHitboxes = [];
+const allRayVisuals = [];
 const defaultToggle = true;
 
 function showHitbox(object3D, scene, physicsBody) {
@@ -181,6 +182,50 @@ function showDetectionProxyBox(object3D, scene, options = {})
   console.log('[DEBUG] showDetectionProxyBox registered:', helpers);
   return helpers;
 }
+
+
+function showRay(origin, direction, length, scene, color = 0xff0000)
+{
+  const material = new THREE.LineBasicMaterial({ color });
+  const points = [
+    origin.clone(),
+    origin.clone().add(direction.clone().normalize().multiplyScalar(length))
+  ];
+  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const line = new THREE.Line(geometry, material);
+  line.visible = true;
+
+  scene.add(line);
+
+  const visual = {
+    line,
+    update(newOrigin, newDirection, newLength)
+    {
+      const start = newOrigin.clone();
+      const end = newOrigin.clone().add(newDirection.clone().normalize().multiplyScalar(newLength));
+      this.line.geometry.setFromPoints([start, end]);
+    },
+    setVisible(state)
+    {
+      this.line.visible = state;
+    },
+    dispose()
+    {
+      scene.remove(this.line);
+      this.line.geometry.dispose();
+      this.line.material.dispose();
+    }
+  };
+
+  allRayVisuals.push(visual);
+  return visual;
+}
+
+// Voliteľne: globálna kontrola lúčov cez konzolu
+window.toggleRayVisuals = function(state)
+{
+  allRayVisuals.forEach(ray => ray.setVisible(state));
+};
 
 
 // Priebežná aktualizácia všetkých hitboxov (aj detection boxov)
