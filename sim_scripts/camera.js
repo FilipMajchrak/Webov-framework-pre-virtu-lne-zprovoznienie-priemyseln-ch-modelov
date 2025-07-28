@@ -1,18 +1,18 @@
 function createCamera()
 {
   const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
+    75, //field of view (FOV)
+    window.innerWidth / window.innerHeight, //aspect ratio
+    0.1, //near clipping plane
+    1000 //far clipping plane
   );
   return camera;
 }
 
 function setupPointerFlyControls(camera, renderer)
 {
-  const moveSpeed = 5;
-  const rotationSpeed = 0.002;
+  const moveSpeed = 8;
+  const rotationSpeed = 0.003;
 
   const pitchObject = new THREE.Object3D();
   pitchObject.add(camera);
