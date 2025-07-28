@@ -51,3 +51,18 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+#io-table input[type="number"] {
+  text-align: center;         /* zarovnaj číslo na stred */
+  padding: 0.25rem 0.5rem;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+#io-table td {
+  vertical-align: middle;
+}
