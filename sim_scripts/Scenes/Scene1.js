@@ -1,10 +1,11 @@
+// Inicializácia globálneho I/O systému (vstupy + výstupy)
 window.IO = {
   inputs: {
     conv: false,
     conv2: false,
-    p1:false,
-    p2:false,
-    p3:false
+    p1: false,
+    p2: false,
+    p3: false
   },
   outputs: {
     s1: false,
@@ -12,44 +13,47 @@ window.IO = {
     s3: false,
     p1: false,
     p2: false,
-    p3: false
+    p3: false,
+    dist1: 10
   }
 };
 
+// Konštruktor scény
 function Scene1(camera)
 {
-  this.scene = new Physijs.Scene();
-  this.scene.setGravity(new THREE.Vector3(0, -9.81, 0));
+  this.scene = new Physijs.Scene(); // vytvor Physijs scénu (s fyzikou)
+  this.scene.setGravity(new THREE.Vector3(0, -9.81, 0)); // zapni gravitáciu
 
   this.camera = camera;
-  this.updatables = [];
-  this.movingBodies = [];
-  this.detectionZones = [];
 
-  this.ready = false;
-  this.loadedCount = 0;
-  this.expectedLoads = 1;
+  this.updatables = [];      // sem sa ukladajú všetky objekty, ktoré sa majú updatovať
+  this.movingBodies = [];    // objekty, ktoré sa môžu hýbať a reagovať na senzory
+  this.detectionZones = [];  // (rezervované na detekčné zóny)
 
-  this.initScene();
+  this.ready = false;        // indikátor, či je scéna pripravená
+  this.loadedCount = 0;      // koľko modelov sa načítalo
+  this.expectedLoads = 1;    // koľko sa má načítať (upraviť ak bude viac modelov)
+
+  this.initScene();          // spustenie hlavnej inicializácie
 }
 
+// Inicializácia scény – pridanie svetiel, objektov, senzorov, piestov...
 Scene1.prototype.initScene = function ()
 {
-  this.activatedObjects = new Set(); // sleduje len objekty, ktoré sa reálne pohli
+  this.activatedObjects = new Set(); // sledovanie, ktoré objekty boli detegované
 
   this.addLights();
   this.addHelpers();
 
-  loadOBJModel(
-  {
+  // Načítanie modelu conveyor1 (obj)
+  loadOBJModel({
     scene: this.scene,
     url: 'obj/conv1.obj',
     position: [0, 5, 0],
     scale: [0.01, 0.01, 0.01],
     rotation: [0, 0, 180],
     mass: 0,
-    onLoaded: (obj, collider) =>
-    {
+    onLoaded: (obj, collider) => {
       this.conv1 = obj;
       this.conv1Body = collider;
 
@@ -57,63 +61,55 @@ Scene1.prototype.initScene = function ()
       this.scene.add(boundingMesh);
       showHitbox(obj, this.scene, boundingMesh);
 
+      // Vytvor distance senzor až keď je model načítaný
+      this.distanceSensor1 = createDistanceSensor({
+        origin: new THREE.Vector3(0, 15, 0),
+        rotation: new THREE.Euler(degToRad(-90), 0, 0),
+        length: 10,
+        scene: this.scene,
+        targetObjects: [...this.movingBodies, this.conv1Body],
+        showRay: true
+      });
+
+      // Pridaj update pre distance senzor
+      this.updatables.push(() => {
+        this.distanceSensor1.update();
+        const dist = this.distanceSensor1.getDistance();
+        IO.outputs.dist1 = typeof dist === 'number' ? parseFloat(dist.toFixed(2)) : 0;
+      });
+
       this.loadedCount++;
-      if (this.loadedCount === this.expectedLoads)
-      {
+      if (this.loadedCount === this.expectedLoads) {
         this.ready = true;
       }
     }
   });
 
-  loadOBJModel(
-  {
+  // Načítanie modelu conveyor2
+  loadOBJModel({
     scene: this.scene,
     url: 'obj/conv2.obj',
     position: [-0.5, 5, 36],
     scale: [0.1, 0.1, 0.1],
     rotation: [0, 0, 0],
     mass: 0,
-    onLoaded: (obj, collider) =>
-    {
-      this.conv1 = obj;
-      this.conv1Body = collider;
+    onLoaded: (obj, collider) => {
+      this.conv2 = obj;
+      this.conv2Body = collider;
 
       const boundingMesh = createBoundingBoxMesh(obj);
       this.scene.add(boundingMesh);
       showHitbox(obj, this.scene, boundingMesh);
 
       this.loadedCount++;
-      if (this.loadedCount === this.expectedLoads)
-      {
+      if (this.loadedCount === this.expectedLoads) {
         this.ready = true;
       }
     }
   });
 
-  //createStaticCube(
-  //{
-  //  scene: this.scene,
-  //  position: [0, 8, 18],
-  //  rotation: [0, 0, 0],
-  //  size: [10, 1, 10],
-  //  color: 0x444444
-  //});
-
-  //const { mesh: cube } = createFallingCube(
-  //{
-  //  scene: this.scene,
-  //  position: [0, 10, 0],
-  //  rotation: [0, 0, 0],
-  //  size: [1, 1, 1],
-  //  color: 0xff0000,
-  //  mass: 1,
-  //  friction: 1,
-  //  restitution: 0.1
-  //}, "Cube1");
-  //this.movingBodies.push(cube);
-
-  const { mesh: cylinder } = createFallingCylinder(
-  {
+  // Pridanie jedného padajúceho valca (testovací objekt)
+  const { mesh: cylinder } = createFallingCylinder({
     scene: this.scene,
     position: [0, 11, -10],
     rotation: [90, 0, 0],
@@ -128,54 +124,26 @@ Scene1.prototype.initScene = function ()
   }, "Cylinder");
   this.movingBodies.push(cylinder);
 
-  const piston1 = createPiston(this.scene,
-  {
-    name: "P1",
-    position: [6, 10, 18],
-    size: [5, 1, 1],
-    color: 0x00ff00,
-    direction: [-1, 0, 0], 
-    moveDistance: 6,
-    speed: 2,
-    getInputFn: () => IO.inputs.p1,
-    setOutputFn: (v) => IO.outputs.p1 = v,
-    affectedObjects: this.movingBodies 
+  // Vytvorenie 3 piestov – ovládané pomocou IO.inputs.p1 až p3
+  [18, 33, 48].forEach((z, index) => {
+    const i = index + 1;
+    const piston = createPiston(this.scene, {
+      name: `P${i}`,
+      position: [6, 10, z],
+      size: [5, 1, 1],
+      color: 0x00ff00,
+      direction: [-1, 0, 0],
+      moveDistance: 6,
+      speed: 2,
+      getInputFn: () => IO.inputs[`p${i}`],
+      setOutputFn: (v) => IO.outputs[`p${i}`] = v,
+      affectedObjects: this.movingBodies
+    });
+    this.updatables.push(piston.update);
   });
-  this.updatables.push(piston1.update);
 
-  const piston2 = createPiston(this.scene,
-  {
-    name: "P2",
-    position: [6, 10, 33],
-    size: [5, 1, 1],
-    color: 0x00ff00,
-    direction: [-1, 0, 0], 
-    moveDistance: 6,
-    speed: 2,
-    getInputFn: () => IO.inputs.p2,
-    setOutputFn: (v) => IO.outputs.p2 = v,
-    affectedObjects: this.movingBodies 
-  });
-  this.updatables.push(piston2.update);
-
-  const piston3 = createPiston(this.scene,
-  {
-    name: "P3",
-    position: [6, 10, 48],
-    size: [5, 1, 1],
-    color: 0x00ff00,
-    direction: [-1, 0, 0], 
-    moveDistance: 6,
-    speed: 2,
-    getInputFn: () => IO.inputs.p3,
-    setOutputFn: (v) => IO.outputs.p3 = v,
-    affectedObjects: this.movingBodies 
-  });
-  this.updatables.push(piston3.update);
-
-
-  this.detectionBox = createDetectionBox(
-  {
+  // Dve detekčné zóny (napr. pás)
+  this.detectionBox = createDetectionBox({
     width: 4,
     height: 0.2,
     depth: 26,
@@ -186,8 +154,7 @@ Scene1.prototype.initScene = function ()
     inputCondition: "conv"
   });
 
-  this.detectionBox2 = createDetectionBox(
-  {
+  this.detectionBox2 = createDetectionBox({
     width: 5,
     height: 0.2,
     depth: 46,
@@ -198,43 +165,24 @@ Scene1.prototype.initScene = function ()
     inputCondition: "conv2"
   });
 
-  this.raySensor = createRaySensor({
-    origin: new THREE.Vector3(2, 10, 20),
-    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
-    length: 5,
-    scene: this.scene,
-    targetObjects: this.movingBodies,
-    showRay: true,
-    onDetect: (hit) => IO.outputs.s1 = true,
-    onClear: () => IO.outputs.s1 = false
+  // Tri ray senzory (smerom doprava)
+  const raySensorPositions = [20, 35, 50];
+  raySensorPositions.forEach((z, i) => {
+    const index = i + 1;
+    this[`raySensor${index}`] = createRaySensor({
+      origin: new THREE.Vector3(2, 10, z),
+      rotation: new THREE.Euler(0, degToRad(90), 0),
+      length: 5,
+      scene: this.scene,
+      targetObjects: this.movingBodies,
+      showRay: true,
+      onDetect: () => IO.outputs[`s${index}`] = true,
+      onClear: () => IO.outputs[`s${index}`] = false
+    });
   });
 
-  this.raySensor2 = createRaySensor({
-    origin: new THREE.Vector3(2, 10, 35),
-    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
-    length: 5,
-    scene: this.scene,
-    targetObjects: this.movingBodies,
-    showRay: true,
-    onDetect: (hit) => IO.outputs.s2 = true,
-    onClear: () => IO.outputs.s2 = false
-  });
-
-  this.raySensor3 = createRaySensor({
-    origin: new THREE.Vector3(2, 10, 50),
-    rotation: new THREE.Euler(0, degToRad(90), 0), // otočenie doprava
-    length: 5,
-    scene: this.scene,
-    targetObjects: this.movingBodies,
-    showRay: true,
-    onDetect: (hit) => IO.outputs.s3 = true,
-    onClear: () => IO.outputs.s3 = false
-  });
-
-
-
-  this.updatables.push(() =>
-  {
+  // Hlavný update blok – volaný každý frame
+  this.updatables.push(() => {
     for (const obj of this.movingBodies)
     {
       obj.userData?.syncVisual?.();
@@ -242,33 +190,37 @@ Scene1.prototype.initScene = function ()
       const target = obj.userData?.detectionTarget ?? obj;
       const objectBox = new THREE.Box3().setFromObject(target);
 
-      // detectionBox1 – základné správanie
       const isInBox1 = this.detectionBox.box3.intersectsBox(objectBox);
-      const isBox1Enabled = IO.inputs.conv;
-
-      if (isInBox1 && isBox1Enabled)
+      if (isInBox1 && IO.inputs.conv)
       {
         moveDetectedObject(obj, this.detectionBox);
         this.activatedObjects.add(obj);
       }
 
-      // detectionBox2 – zatiaľ rovnaké správanie
       const isInBox2 = this.detectionBox2.box3.intersectsBox(objectBox);
-      const isBox2Enabled = IO.inputs.conv2;
-
-      if (isInBox2 && isBox2Enabled)
+      if (isInBox2 && IO.inputs.conv2)
       {
         moveDetectedObject(obj, this.detectionBox2);
         this.activatedObjects.add(obj);
       }
-
     }
 
-    [this.raySensor, this.raySensor2, this.raySensor3].forEach(sensor => sensor.update());
+    // Bezpečný update distance senzora
+    if (this.distanceSensor1)
+    {
+      this.distanceSensor1.update();
+      const dist = this.distanceSensor1.getDistance();
+      IO.outputs.dist1 = typeof dist === 'number' ? parseFloat(dist.toFixed(2)) : 0;
+    }
+
+    // Update ray senzorov (ak existujú)
+    [this.raySensor1, this.raySensor2, this.raySensor3].forEach(sensor => sensor?.update());
+
     updateDetectedObjectsMovement();
   });
 };
 
+// Pomocné funkcie pre svetlo, mriežku atď.
 Scene1.prototype.addLights = function ()
 {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
@@ -288,17 +240,14 @@ Scene1.prototype.addHelpers = function ()
   this.scene.add(gridHelper);
 };
 
-Scene1.prototype.init = function ()
-{
-  // ďalšia inicializácia ak treba
-};
+// Voliteľné hooky
+Scene1.prototype.init = function () {};
+Scene1.prototype.dispose = function () {};
 
+// Hlavný update cyklus scény
 Scene1.prototype.update = function (delta)
 {
-  if (!this.ready)
-  {
-    return;
-  }
+  if (!this.ready) return;
 
   for (const updateFn of this.updatables)
   {
@@ -306,9 +255,4 @@ Scene1.prototype.update = function (delta)
   }
 
   this.scene.simulate(undefined, 1);
-};
-
-Scene1.prototype.dispose = function ()
-{
-  // čistenie ak treba
 };
