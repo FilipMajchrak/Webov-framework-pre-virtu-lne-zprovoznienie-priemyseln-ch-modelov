@@ -220,6 +220,7 @@ Scene1.prototype.initScene = function ()
   });
 };
 
+
 // Pomocné funkcie pre svetlo, mriežku atď.
 Scene1.prototype.addLights = function ()
 {
