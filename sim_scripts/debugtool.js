@@ -1,21 +1,28 @@
-const allHitboxes = [];
-const allRayVisuals = [];
-const defaultToggle = true;
+// =========================
+// Hitboxy a Ray vizualizácie
+// =========================
+
+const allHitboxes = [];       // Zoznam všetkých hitboxových helperov (box3Helper, proxy atď.)
+const allRayVisuals = [];     // Zoznam všetkých ray (lúčových) vizualizácií
+const defaultToggle = true;   // Predvolená viditeľnosť hitboxov
+const defaultToggleRay = true; // Predvolená viditeľnosť rayov
+
+// =========================
+// Hitboxy okolo objektov
+// =========================
 
 function showHitbox(object3D, scene, physicsBody) {
   const box = new THREE.Box3().setFromObject(object3D);
-  const yellowHelper = new THREE.Box3Helper(box, 0xffff00);
+  const yellowHelper = new THREE.Box3Helper(box, 0xffff00); // žltý box = vizuálny hitbox objektu
   yellowHelper.visible = defaultToggle;
   scene.add(yellowHelper);
 
   let greenHelper = null;
   let greenBox = null;
 
-  if (
-    physicsBody &&
-    physicsBody instanceof THREE.Object3D &&
-    physicsBody !== object3D
-  ) {
+  // Ak má objekt vlastné fyzikálne telo (iné než mesh), zobrazíme zelený box
+  if (physicsBody &&physicsBody instanceof THREE.Object3D &&physicsBody !== object3D) 
+  {
     greenBox = new THREE.Box3().setFromObject(physicsBody);
     greenHelper = new THREE.Box3Helper(greenBox, 0x00ff00);
     greenHelper.visible = defaultToggle;
@@ -59,13 +66,18 @@ function showHitbox(object3D, scene, physicsBody) {
   };
 
   allHitboxes.push(helpers);
-  helpers.update(); // okamžitá inicializácia
+  helpers.update();
   console.log('[DEBUG] showHitbox registered:', helpers);
   return helpers;
 }
 
+// =========================
+// Vizualizácia detection boxov
+// =========================
+
 function showDetectionBox(detectionBox, scene) {
-  if (!detectionBox || !detectionBox.box3) {
+  if (!detectionBox || !detectionBox.box3) 
+  {
     console.warn('Neplatný detectionBox objekt');
     return;
   }
@@ -74,7 +86,8 @@ function showDetectionBox(detectionBox, scene) {
   helper.visible = defaultToggle;
   scene.add(helper);
 
-  function update() {
+  function update() 
+  {
     detectionBox.update();
     helper.box.copy(detectionBox.box3);
   }
@@ -101,29 +114,41 @@ function showDetectionBox(detectionBox, scene) {
   return helpers;
 }
 
-// Globálny prepínač hitboxov (volaj cez F12 konzolu)
+// =========================
+// Globálny prepínač hitboxov (toggle cez konzolu)
+// =========================
+
 window.toggleHitbox = function (state, index = null) {
-  if (allHitboxes.length === 0) {
+  if (allHitboxes.length === 0) 
+  {
     console.warn('Hitboxy ešte nie sú inicializované.');
     return;
   }
 
   const toggle = (h, i) => {
-    // Zistí, či ide o štandardný hitbox (yellowHelper) alebo detection box (helper)
     const current = h.yellowHelper?.visible ?? h.helper?.visible ?? true;
     const newState = typeof state === 'boolean' ? state : !current;
     h.setVisible(newState);
-    console.log(`Hitbox ${i} ${newState ? 'zapnutý' : 'vypnutý'}`);
+    //console.log(`Hitbox ${i} ${newState ? 'zapnutý' : 'vypnutý'}`);
   };
 
-  if (index === null) {
+  if (index === null) 
+  {
     allHitboxes.forEach((h, i) => toggle(h, i));
-  } else if (index >= 0 && index < allHitboxes.length) {
+  } 
+  else if (index >= 0 && index < allHitboxes.length) 
+  {
     toggle(allHitboxes[index], index);
-  } else {
+  } 
+  else 
+  {
     console.warn('Neplatný index hitboxu:', index);
   }
 };
+
+// =========================
+// Vizualizačný box obalujúci objekt (proxy pre detekciu)
+// =========================
 
 function showDetectionProxyBox(object3D, scene, options = {})
 {
@@ -132,13 +157,7 @@ function showDetectionProxyBox(object3D, scene, options = {})
   const opacity = options.opacity ?? 0.3;
 
   const geometry = new THREE.BoxGeometry();
-  const material = new THREE.MeshBasicMaterial({
-    color: color,
-    wireframe: true,
-    transparent: true,
-    opacity: opacity,
-    depthWrite: false
-  });
+  const material = new THREE.MeshBasicMaterial({color: color,wireframe: true,transparent: true,opacity: opacity,depthWrite: false});
 
   const proxyMesh = new THREE.Mesh(geometry, material);
   proxyMesh.visible = defaultToggle;
@@ -183,17 +202,17 @@ function showDetectionProxyBox(object3D, scene, options = {})
   return helpers;
 }
 
+// =========================
+// Zobrazenie ray (lúčov) – napr. pre senzory
+// =========================
 
 function showRay(origin, direction, length, scene, color = 0xff0000)
 {
   const material = new THREE.LineBasicMaterial({ color });
-  const points = [
-    origin.clone(),
-    origin.clone().add(direction.clone().normalize().multiplyScalar(length))
-  ];
+  const points = [origin.clone(),origin.clone().add(direction.clone().normalize().multiplyScalar(length))];
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
   const line = new THREE.Line(geometry, material);
-  line.visible = true;
+  line.visible = defaultToggleRay;
 
   scene.add(line);
 
@@ -221,16 +240,34 @@ function showRay(origin, direction, length, scene, color = 0xff0000)
   return visual;
 }
 
-// Voliteľne: globálna kontrola lúčov cez konzolu
-window.toggleRayVisuals = function(state)
+// =========================
+// Globálny prepínač všetkých ray vizualizácií (cez konzolu)
+// =========================
+
+window.toggleRayVisuals = function(state = null)
 {
-  allRayVisuals.forEach(ray => ray.setVisible(state));
+  if (allRayVisuals.length === 0)
+  {
+    console.warn('[DEBUG] Žiadne ray vizualizácie neexistujú.');
+    return;
+  }
+
+  allRayVisuals.forEach((ray, i) =>
+  {
+    const current = ray.line.visible;
+    const next = (typeof state === 'boolean') ? state : !current;
+    ray.setVisible(next);
+    //console.log(`[DEBUG] Ray ${i} ${next ? 'ZAPNUTÝ' : 'VYPNUTÝ'}`);
+  });
 };
 
+// =========================
+// Automatická aktualizácia všetkých hitboxov každý frame
+// =========================
 
-// Priebežná aktualizácia všetkých hitboxov (aj detection boxov)
 function updateAllHitboxes() {
-  for (const h of allHitboxes) {
+  for (const h of allHitboxes) 
+  {
     h.update();
   }
   requestAnimationFrame(updateAllHitboxes);
