@@ -162,8 +162,8 @@ Scene1.prototype.initScene = function ()
     const i = index + 1;
     const piston = createPiston(this.scene, {
       name: `P${i}`,
-      position: [6, 10, z],
-      size: [5, 1, 1],
+      position: [5, 10, z],
+      size: [6, 1, 1],
       color: 0x00ff00,
       direction: [-1, 0, 0],
       moveDistance: 6,
