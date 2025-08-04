@@ -106,4 +106,5 @@ function createRaySensor({
   }
 
   return sensor;
+  
 }

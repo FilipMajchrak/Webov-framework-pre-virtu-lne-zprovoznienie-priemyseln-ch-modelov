@@ -52,6 +52,62 @@ function loadOBJModel({scene,url,position = [0, 0, 0],scale = [1, 1, 1],rotation
   });
 }
 
+function loadConcaveOBJModel ({ scene, url, position, scale, rotation, mass = 0, onLoaded }) {
+  const loader = new THREE.OBJLoader();
+
+  loader.load(url, function (obj) {
+    const material = Physijs.createMaterial(new THREE.MeshStandardMaterial({ visible: false }),0.8,0.3);
+
+    // centrovanie
+    const box = new THREE.Box3().setFromObject(obj);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    obj.traverse(child => {
+      if (child.isMesh) {
+        child.geometry.computeBoundingBox();
+        child.geometry.computeVertexNormals();
+        child.position.sub(center); // centrovanie
+        child.material = new THREE.MeshStandardMaterial({ color: 0x888888 });
+      }
+    });
+
+    obj.position.set(...position);
+    obj.scale.set(...scale);
+    obj.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+
+    scene.add(obj);
+
+    // Získanie geometrie pre fyziku
+    let geometry = null;
+
+    obj.traverse(child => {
+      if (!geometry && child.isMesh && child.geometry) {
+        // Ak je to BufferGeometry, skonvertuj
+        if (child.geometry.isBufferGeometry) {
+          geometry = new THREE.Geometry().fromBufferGeometry(child.geometry);
+        } else {
+          geometry = child.geometry.clone();
+        }
+      }
+    });
+
+    if (!geometry) {
+      console.error("❌ Žiadna mesh geometria nebola nájdená v .obj súbore!");
+      return;
+    }
+
+    const collider = new Physijs.ConcaveMesh(geometry, material, mass);
+    collider.position.copy(obj.position);
+    collider.rotation.copy(obj.rotation);
+    collider.scale.copy(obj.scale);
+
+    scene.add(collider);
+
+    onLoaded?.(obj, collider);
+  });
+}
+
 // Vytvori bounding box mesh (vizualny alebo referencny)
 function createBoundingBoxMesh(object3D)
 {

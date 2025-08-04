@@ -4,7 +4,7 @@
 
 const allHitboxes = [];       // Zoznam všetkých hitboxových helperov (box3Helper, proxy atď.)
 const allRayVisuals = [];     // Zoznam všetkých ray (lúčových) vizualizácií
-const defaultToggle = true;   // Predvolená viditeľnosť hitboxov
+const defaultToggle = false;   // Predvolená viditeľnosť hitboxov
 const defaultToggleRay = true; // Predvolená viditeľnosť rayov
 
 // =========================

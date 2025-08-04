@@ -82,6 +82,11 @@ function createDistanceSensor({
     setRotation(euler)
     {
       this.rotation = euler.clone();
+    },
+
+    setTargets(targets)
+    {
+      this.targetObjects = targets;
     }
   };
 

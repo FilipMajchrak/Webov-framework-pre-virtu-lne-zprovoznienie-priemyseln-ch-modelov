@@ -11,8 +11,8 @@ function createCamera()
 
 function setupPointerFlyControls(camera, renderer)
 {
-  const moveSpeed = 8;     // Rýchlosť pohybu dopredu/dozadu/do strán
-  const rotationSpeed = 0.003; // Rýchlosť otáčania pohľadu myšou
+  const moveSpeed = 12;     // Rýchlosť pohybu dopredu/dozadu/do strán
+  const rotationSpeed = 0.004; // Rýchlosť otáčania pohľadu myšou
 
   // pitchObject umožňuje rotáciu hore/dole (X-os)
   const pitchObject = new THREE.Object3D();
