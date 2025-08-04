@@ -49,6 +49,12 @@ window.onload = function ()
 
     const deltaTime = clock.getDelta(); // Čas medzi snímkami (v sekundách)
     sceneManager.update(deltaTime);     // Aktualizuj a vykresli aktuálnu scénu
+
+    //Aktualizuj IO tabuľku (len ak sa zmenila)
+    if (typeof renderIOTable === 'function') 
+    {
+      renderIOTable();
+    }
   }
 
   animate(); // Spusti animáciu

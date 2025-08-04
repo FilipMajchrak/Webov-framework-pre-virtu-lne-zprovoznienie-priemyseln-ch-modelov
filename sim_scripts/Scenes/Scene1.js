@@ -32,7 +32,7 @@ function Scene1(camera)
 
   this.ready = false;        // indikátor, či je scéna pripravená
   this.loadedCount = 0;      // koľko modelov sa načítalo
-  this.expectedLoads = 1;    // koľko sa má načítať (upraviť ak bude viac modelov)
+  this.expectedLoads = 3;    // koľko sa má načítať (upraviť ak bude viac modelov)
 
   this.initScene();          // spustenie hlavnej inicializácie
 }
@@ -65,7 +65,7 @@ Scene1.prototype.initScene = function ()
       this.distanceSensor1 = createDistanceSensor({
         origin: new THREE.Vector3(0, 15, 0),
         rotation: new THREE.Euler(degToRad(-90), 0, 0),
-        length: 10,
+        length: 8,
         scene: this.scene,
         targetObjects: [...this.movingBodies, this.conv1Body],
         showRay: true
@@ -85,7 +85,6 @@ Scene1.prototype.initScene = function ()
     }
   });
 
-  // Načítanie modelu conveyor2
   loadOBJModel({
     scene: this.scene,
     url: 'obj/conv2.obj',
@@ -96,6 +95,29 @@ Scene1.prototype.initScene = function ()
     onLoaded: (obj, collider) => {
       this.conv2 = obj;
       this.conv2Body = collider;
+
+      const boundingMesh = createBoundingBoxMesh(obj);
+      this.scene.add(boundingMesh);
+      showHitbox(obj, this.scene, boundingMesh);
+
+      this.loadedCount++;
+      if (this.loadedCount === this.expectedLoads) {
+        this.ready = true;
+      }
+    }
+  });
+
+  // Načítanie modelu box
+  loadOBJModel({
+    scene: this.scene,
+    url: 'obj/box.obj',
+    position: [-6.2, 5, 18],
+    scale: [0.1, 0.08, 0.07],
+    rotation: [0, 0, 0],
+    mass: 0,
+    onLoaded: (obj, collider) => {
+      this.box = obj;
+      this.boxBody = collider;
 
       const boundingMesh = createBoundingBoxMesh(obj);
       this.scene.add(boundingMesh);
