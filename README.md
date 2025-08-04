@@ -29,16 +29,19 @@ Tento projekt predstavuje interaktívny 3D simulátor vytvorený pomocou knižni
 
 ## 🎮 Ovládanie
 
-| Akcia               | Klávesy / myš           |
-|---------------------|--------------------------|
-| Pohyb dopredu       | `W`                     |
-| Pohyb dozadu        | `S`                     |
-| Pohyb doľava        | `A`                     |
-| Pohyb doprava       | `D`                     |
-| Rotácia pohľadu     | `Myš (držaná + pohyb)`  |
-| Aktivácia vstupu    | `window.IO.inputs` v konzole |
-| Zapnutie hitboxov   | `toggleHitbox()`        |
-| Zapnutie lúčov      | `toggleRayVisuals()`    |
+| Akcia                       | Klávesy / myš                |
+| --------------------------- | ---------------------------- |
+| Pohyb dopredu               | `W`                          |
+| Pohyb dozadu                | `S`                          |
+| Pohyb doľava                | `A`                          |
+| Pohyb doprava               | `D`                          |
+| Rotácia pohľadu             | `Myš (držaná + pohyb)`       |
+| Ukončenie ovládania pohľadu | `ESC` (uvoľní myš)           |
+| Zapnutie hitboxov           | `toggleHitbox()`             |
+| Zapnutie lúčov              | `toggleRayVisuals()`         |
+| Aktivácia I/O tlačidiel     | Tlačidlá v ľavom paneli HMI  |
+| Aktivácia vstupu            | `window.IO.inputs` v konzole |
+
 
 ---
 
