@@ -38,9 +38,9 @@ function PLC_Update()
             waitingForMeasurement = false;
             blockConv1 = true;
 
-            console.log(`Nameraný priemer: ${diameter.toFixed(2)} → slot ${s}`);
-            console.log("[DEBUG] sortQueue PUSH →", [...sortQueue]);
-            console.log("[INFO] CONV1 zablokovaný po meraní");
+            //console.log(`Nameraný priemer: ${diameter.toFixed(2)} → slot ${s}`);
+            //console.log("[DEBUG] sortQueue PUSH →", [...sortQueue]);
+            //console.log("[INFO] CONV1 zablokovaný po meraní");
         }
 
         // === 3. TRIEDENIE ===
@@ -74,8 +74,8 @@ function PLC_Update()
                         slot = 0;
                         awaitingSort = false;
                         blockConv1 = false;
-                        console.log("[INFO] Slot 1 hotový → CONV1 odblokovaný");
-                        console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
+                        //console.log("[INFO] Slot 1 hotový → CONV1 odblokovaný");
+                        //console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
                     }
                 }
                 break;
@@ -98,8 +98,8 @@ function PLC_Update()
                         slot = 0;
                         awaitingSort = false;
                         blockConv1 = false;
-                        console.log("[INFO] Slot 2 hotový → CONV1 odblokovaný");
-                        console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
+                        //console.log("[INFO] Slot 2 hotový → CONV1 odblokovaný");
+                        //console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
                     }
                 }
                 break;
@@ -122,8 +122,8 @@ function PLC_Update()
                         slot = 0;
                         awaitingSort = false;
                         blockConv1 = false;
-                        console.log("[INFO] Slot 3 hotový → CONV1 odblokovaný");
-                        console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
+                        //console.log("[INFO] Slot 3 hotový → CONV1 odblokovaný");
+                        //console.log("[DEBUG] sortQueue SHIFT →", [...sortQueue]);
                     }
                 }
                 break;
