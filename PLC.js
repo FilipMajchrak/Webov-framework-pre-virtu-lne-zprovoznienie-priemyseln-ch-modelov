@@ -35,6 +35,7 @@ function PLC_Update()
             p1_actionStarted = false;
         }
         //console.log({s1: IO.outputs.s1,p1: IO.inputs.p1,p1_rec: IO.outputs.p1_rec,conv2: IO.inputs.conv2,p1_ex:IO.outputs.p1_ex,p1_actionStarted});
+        IO.inputs.conv = !(IO.outputs.conv1end && !IO.inputs.conv2);
     }
     else
     {
