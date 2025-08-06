@@ -26,8 +26,8 @@ window.onload = function ()
   // ==========================
   // Inicializácia správcu scén a načítanie scény
   // ==========================
-  const sceneManager = new SceneManager(renderer, camera);
-  sceneManager.loadScene(new Scene1(camera)); // Načíta Scene1 a zavolá init()
+  window.sceneManager = new SceneManager(renderer, camera);
+  window.sceneManager.loadScene(new Scene1(camera));// Načíta Scene1 a zavolá init()
 
   // ==========================
   // Prispôsobenie renderera a kamery pri zmene veľkosti okna
@@ -49,6 +49,12 @@ window.onload = function ()
 
     const deltaTime = clock.getDelta(); // Čas medzi snímkami (v sekundách)
     sceneManager.update(deltaTime);     // Aktualizuj a vykresli aktuálnu scénu
+
+    // Volanie PLC logiky
+    if (typeof PLC_Update === 'function') 
+    {
+      PLC_Update();
+    }
 
     //Aktualizuj IO tabuľku (len ak sa zmenila)
     if (typeof renderIOTable === 'function') 

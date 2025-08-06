@@ -67,7 +67,7 @@ function showHitbox(object3D, scene, physicsBody) {
 
   allHitboxes.push(helpers);
   helpers.update();
-  console.log('[DEBUG] showHitbox registered:', helpers);
+  //console.log('[DEBUG] showHitbox registered:', helpers);
   return helpers;
 }
 
@@ -110,7 +110,7 @@ function showDetectionBox(detectionBox, scene) {
 
   allHitboxes.push(helpers);
   helpers.update();
-  console.log('[DEBUG] showDetectionBox registered:', helpers);
+  //console.log('[DEBUG] showDetectionBox registered:', helpers);
   return helpers;
 }
 
@@ -198,7 +198,7 @@ function showDetectionProxyBox(object3D, scene, options = {})
   allHitboxes.push(helpers);
   helpers.update();
 
-  console.log('[DEBUG] showDetectionProxyBox registered:', helpers);
+  //console.log('[DEBUG] showDetectionProxyBox registered:', helpers);
   return helpers;
 }
 
