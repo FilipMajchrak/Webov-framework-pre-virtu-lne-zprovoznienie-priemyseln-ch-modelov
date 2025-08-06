@@ -74,23 +74,6 @@ Scene1.prototype.initScene = function ()
       this.scene.add(boundingMesh);
       showHitbox(obj, this.scene, boundingMesh);
 
-      // Vytvor distance senzor až keď je model načítaný
-      this.distanceSensor1 = createDistanceSensor({
-        origin: new THREE.Vector3(0, 15, 0),
-        rotation: new THREE.Euler(degToRad(-90), 0, 0),
-        length: 8,
-        scene: this.scene,
-        targetObjects: [],
-        showRay: true
-      });
-
-      // Pridaj update pre distance senzor
-      this.updatables.push(() => {
-        this.distanceSensor1.update();
-        const dist = this.distanceSensor1.getDistance();
-        IO.outputs.dist1 = typeof dist === 'number' ? parseFloat(dist.toFixed(2)) : 0;
-      });
-
       this.loadedCount++;
       if (this.loadedCount === this.expectedLoads) {
         this.ready = true;
@@ -113,6 +96,23 @@ Scene1.prototype.initScene = function ()
       this.scene.add(boundingMesh);
       showHitbox(obj, this.scene, boundingMesh);
 
+       // Vytvor distance senzor až keď je model načítaný
+      this.distanceSensor1 = createDistanceSensor({
+        origin: new THREE.Vector3(0, 15, 17),
+        rotation: new THREE.Euler(degToRad(-90), 0, 0),
+        length: 8,
+        scene: this.scene,
+        targetObjects: [],
+        showRay: true
+      });
+
+      // Pridaj update pre distance senzor
+      this.updatables.push(() => {
+        this.distanceSensor1.update();
+        const dist = this.distanceSensor1.getDistance();
+        IO.outputs.dist1 = typeof dist === 'number' ? parseFloat(dist.toFixed(2)) : 0;
+      });
+
       this.loadedCount++;
       if (this.loadedCount === this.expectedLoads) {
         this.ready = true;
@@ -121,7 +121,7 @@ Scene1.prototype.initScene = function ()
   });
 
 // Načítanie modelu box
-[18, 33, 48].forEach((z, index) => {
+[22, 37, 52].forEach((z, index) => {
   const i = index + 1;
 
   loadConcaveOBJModel({
@@ -156,13 +156,13 @@ Scene1.prototype.initScene = function ()
   });
 });
 
-  [...Array(5)].forEach((_, i) => {
-  const z = -10 + i * 3; // aby neboli na sebe
-  this.spawnCylinder(i + 1, [0, 11, z]);
-  });
+  //[...Array(5)].forEach((_, i) => {
+  //const z = -10 + i * 3; // aby neboli na sebe
+  //this.spawnCylinder(i + 1, [0, 11, z]);
+  //});
 
   // Vytvorenie 3 piestov – ovládané pomocou IO.inputs.p1 až p3
-  [18, 33, 48].forEach((z, index) => {
+  [22, 37, 52].forEach((z, index) => {
     const i = index + 1;
     const piston = createPiston(this.scene, {
       name: `P${i}`,
@@ -206,16 +206,16 @@ Scene1.prototype.initScene = function ()
   this.detectionBox3 = createDetectionBox({
     width: 3,
     height: 3,
-    depth: 5,
+    depth: 10,
     scene: this.scene,
-    position: [0, 10.5, -10],
+    position: [0, 10.5, -8],
     moveDirection: new THREE.Vector3(0, 0, 1),
     moveSpeed: 3,
     inputCondition: "conv2"
   });
 
   // Tri ray senzory (smerom doprava)
-  const raySensorPositions = [20, 35, 50];
+  const raySensorPositions = [24, 39, 54];
   raySensorPositions.forEach((z, i) => {
     const index = i + 1;
     this[`raySensor${index}`] = createRaySensor({
@@ -252,7 +252,6 @@ Scene1.prototype.initScene = function ()
     onClear: () => IO.outputs.conv2end = false
   });
 
-
   //========================================
   // Hlavný update blok – volaný každý frame
   this.updatables.push(() => {
@@ -281,7 +280,7 @@ Scene1.prototype.initScene = function ()
     // update distance senzora
     if (this.distanceSensor1)
     {
-      this.distanceSensor1.setTargets([...this.movingBodies, this.conv1Body]);
+      this.distanceSensor1.setTargets([...this.movingBodies, this.conv2Body]);
       this.distanceSensor1.update();
       const dist = this.distanceSensor1.getDistance();
       IO.outputs.dist1 = typeof dist === 'number' ? parseFloat(dist.toFixed(2)) : 0;
@@ -311,7 +310,7 @@ Scene1.prototype.initScene = function ()
         return;
       }
 
-      this.spawnCylinder(this.spawnIndex++, [0, 11, -10], { min: 0.4, max: 0.9 });
+      this.spawnCylinder(this.spawnIndex, [0, 11, -10], { min: 0.4, max: 0.9 });
 
     }, 5000);
   };
@@ -380,11 +379,10 @@ Scene1.prototype.spawnCylinder = function(index, position = [0, 11, -10], radius
     });
 
     if (isCylinderInZone) {
-      //console.warn(`[Spawner] Cylinder NOT spawned — jeden je už v detectionBox3`);
+      //console.warn(`[Spawner] ${name} nebol spawnutý — niečo už je v zóne`);
       return;
     }
 
-    // Vygeneruj náhodný polomer v zadanom rozsahu
     const radius = THREE.MathUtils.lerp(radiusRange.min, radiusRange.max, Math.random());
 
     const { mesh: cylinder } = createFallingCylinder({
@@ -405,6 +403,8 @@ Scene1.prototype.spawnCylinder = function(index, position = [0, 11, -10], radius
     cylinder.userData.id = name;
 
     this.movingBodies.push(cylinder);
-    //console.log(`[Spawner] Spawned: ${name} with radius ${radius.toFixed(2)}`);
+    //console.log(`[Spawner] Spawned: ${name} (r = ${radius.toFixed(2)})`);
+
+    this.spawnIndex++;
   }, 100);
 };
