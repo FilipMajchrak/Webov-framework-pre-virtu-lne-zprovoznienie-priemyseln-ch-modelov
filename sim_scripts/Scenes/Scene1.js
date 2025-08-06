@@ -1,6 +1,7 @@
 // Inicializácia globálneho I/O systému (vstupy + výstupy)
 window.IO = {
   inputs: {
+    start: false,
     conv: false,
     conv2: false,
     p1: false,
@@ -13,9 +14,12 @@ window.IO = {
     s1: false,
     s2: false,
     s3: false,
-    p1: false,
-    p2: false,
-    p3: false,
+    p1_rec: true,
+    p2_rec: true,
+    p3_rec: true,
+    p1_ex:  false,
+    p2_ex:  false, 
+    p3_ex:  false,  
     dist1: 10
   }
 };
@@ -169,7 +173,8 @@ Scene1.prototype.initScene = function ()
       moveDistance: 6,
       speed: 2,
       getInputFn: () => IO.inputs[`p${i}`],
-      setOutputFn: (v) => IO.outputs[`p${i}`] = v,
+      setOutputFn: (v) => IO.outputs[`p${i}_ex`] = v,
+      setRetractedFn: (v) => IO.outputs[`p${i}_rec`] = v,
       affectedObjects: this.movingBodies
     });
     this.updatables.push(piston.update);
@@ -290,14 +295,27 @@ Scene1.prototype.initScene = function ()
 
   // Automatický spawner každých 5 sekúnd
   this.spawnIndex = 1;
+
   const startSpawner = () => {
     if (!this.detectionBox3 || !this.detectionBox3.box3) {
-      //console.log('[Spawner] Waiting for detectionBox3...');
-      setTimeout(startSpawner, 500); // počkaj a skús znova
+      setTimeout(startSpawner, 500);
       return;
     }
-    setInterval(() => {this.spawnCylinder(this.spawnIndex++, [0, 11, -10], { min: 0.4, max: 0.9 });}, 5000);
+
+    const maxCylinders = 20;
+
+    const intervalId = setInterval(() => {
+      if (this.spawnIndex > maxCylinders) {
+        clearInterval(intervalId); // zastav časovač
+        console.log(`[Spawner] Hotovo – vytvorených ${maxCylinders} valcov.`);
+        return;
+      }
+
+      this.spawnCylinder(this.spawnIndex++, [0, 11, -10], { min: 0.4, max: 0.9 });
+
+    }, 5000);
   };
+
   startSpawner(); // spustenie oneskorene
 };
 
@@ -353,13 +371,12 @@ Scene1.prototype.update = function (delta)
 // ============================================
 // ====== Scene1.prototype.spawnCylinder ======
 // ============================================
-Scene1.prototype.spawnCylinder = function(index, position = [0, 11, -10], radiusRange = { min: 0.3, max: 0.7 }) {
+Scene1.prototype.spawnCylinder = function(index, position = [0, 11, -10], radiusRange = { min: 0.45, max: 0.7 }) {
   const name = `Cylinder${index}`;
 
   setTimeout(() => {
     const isCylinderInZone = this.movingBodies.some(obj => {
-      return obj.name?.startsWith('Cylinder') &&
-             this.detectionBox3?.box3?.intersectsBox(new THREE.Box3().setFromObject(obj));
+      return obj.name?.startsWith('Cylinder') && this.detectionBox3?.box3?.intersectsBox(new THREE.Box3().setFromObject(obj));
     });
 
     if (isCylinderInZone) {

@@ -14,6 +14,7 @@ function createPiston(
     direction = [0, 0, 1],       // smer pohybu (predvolene pozdĺž osi Z)
     getInputFn = () => false,    // funkcia na čítanie vstupu (napr. IO.inputs.p1)
     setOutputFn = (v) => {},     // funkcia na nastavenie výstupu (napr. IO.outputs.pistonExtended)
+    setRetractedFn = (v) => {},  // funkcia na nastavenie výstupu (napr. IO.outputs.pistonRetracted)
     affectedObjects = []         // zoznam objektov, ktoré môže piest zhodiť pri kontakte
   }
 )
@@ -73,6 +74,7 @@ function createPiston(
 
     // Nastav výstup len ak si takmer v koncovej pozícii (vysunutý)
     setOutputFn(extend && current.distanceTo(end) < 0.01);
+    setRetractedFn(!extend && current.distanceTo(start) < 0.01);
 
     //Kolízna detekcia pri vysúvaní
     if (extend)

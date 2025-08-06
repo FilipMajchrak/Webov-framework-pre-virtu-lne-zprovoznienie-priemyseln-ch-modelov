@@ -93,7 +93,7 @@ function loadConcaveOBJModel ({ scene, url, position, scale, rotation, mass = 0,
     });
 
     if (!geometry) {
-      console.error("❌ Žiadna mesh geometria nebola nájdená v .obj súbore!");
+      console.error("Žiadna mesh geometria nebola nájdená v .obj súbore!");
       return;
     }
 
