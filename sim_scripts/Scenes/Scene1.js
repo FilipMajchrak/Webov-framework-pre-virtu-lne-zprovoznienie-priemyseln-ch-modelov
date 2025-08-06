@@ -295,14 +295,27 @@ Scene1.prototype.initScene = function ()
 
   // Automatický spawner každých 5 sekúnd
   this.spawnIndex = 1;
+
   const startSpawner = () => {
     if (!this.detectionBox3 || !this.detectionBox3.box3) {
-      //console.log('[Spawner] Waiting for detectionBox3...');
-      setTimeout(startSpawner, 500); // počkaj a skús znova
+      setTimeout(startSpawner, 500);
       return;
     }
-    setInterval(() => {this.spawnCylinder(this.spawnIndex++, [0, 11, -10], { min: 0.4, max: 0.9 });}, 5000);
+
+    const maxCylinders = 20;
+
+    const intervalId = setInterval(() => {
+      if (this.spawnIndex > maxCylinders) {
+        clearInterval(intervalId); // zastav časovač
+        console.log(`[Spawner] Hotovo – vytvorených ${maxCylinders} valcov.`);
+        return;
+      }
+
+      this.spawnCylinder(this.spawnIndex++, [0, 11, -10], { min: 0.4, max: 0.9 });
+
+    }, 5000);
   };
+
   startSpawner(); // spustenie oneskorene
 };
 
