@@ -73,6 +73,14 @@
     </div>
   </div>
 
+  <script>
+  serverTCP._server?.on("connection", (socket) => {
+  console.log("[MB] nový klient pripojený:", socket.remoteAddress, "port", socket.remotePort);
+  socket.on("close", () => console.log("[MB] klient odpojený:", socket.remoteAddress));
+  socket.on("error", (err) => console.error("[MB] socket error:", err.message));
+  });
+  </script>
+
   <!-- Načítanie hlavnej scény po načítaní DOM -->
   <script src="sim_scripts/threeScene.js"></script>
   <script src="sim_scripts/IOpanel.js"></script
