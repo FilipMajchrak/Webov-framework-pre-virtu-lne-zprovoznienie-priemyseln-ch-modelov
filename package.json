@@ -1,0 +1,31 @@
+{
+  "name": "simulator-oneexe",
+  "version": "1.0.0",
+  "private": true,
+  "bin": "index.js",
+  "dependencies": {
+    "express": "^4.19.2",
+    "get-port": "^7.1.0",
+    "open": "^9.1.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "pack:win": "pkg . --targets node18-win-x64 --output simulator.exe",
+    "pack:mac": "pkg . --targets node18-macos-x64 --output simulator-mac",
+    "pack:linux": "pkg . --targets node18-linux-x64 --output simulator-linux"
+  },
+  "pkg": {
+    "assets": [
+      "simulator.html",
+      "index.html",
+      "scripts/**/*",
+      "sim_scripts/**/*",
+      "style/**/*",
+      "obj/**/*",
+      "physi/**/*"
+    ]
+  }
+}
