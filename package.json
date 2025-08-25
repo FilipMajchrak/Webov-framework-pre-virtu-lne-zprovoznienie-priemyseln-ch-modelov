@@ -1,0 +1,28 @@
+{
+  "name": "simulator-oneexe",
+  "version": "1.0.0",
+  "private": true,
+  "bin": "index.js",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "pack:win": "pkg . --targets node18-win-x64 --output simulator.exe"
+  },
+  "pkg": {
+    "assets": [
+      "simulator.html",
+      "index.html",
+      "PLC.js",
+      "scripts/**/*",
+      "sim_scripts/**/*",
+      "style/**/*",
+      "obj/**/*",
+      "physi/**/*"
+    ]
+  }
+}
