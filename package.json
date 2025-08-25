@@ -1,10 +1,12 @@
 {
   "name": "simulator-oneexe",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "bin": "index.js",
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "modbus-serial": "^8.0.21-no-serial-port",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "pkg": "^5.8.1"
