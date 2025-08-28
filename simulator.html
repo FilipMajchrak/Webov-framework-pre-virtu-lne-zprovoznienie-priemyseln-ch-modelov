@@ -33,7 +33,7 @@
   <script src="sim_scripts/action_objects/piston.js"></script>
   <script src="sim_scripts/action_objects/distance_sensor.js"></script>
   <script src="sim_scripts/debugtool.js"></script>
-  <script src="PLC.js"></script>
+  <!--<script src="PLC.js"></script>-->
 
 </head>
 
@@ -72,14 +72,6 @@
       </div>
     </div>
   </div>
-
-  <script>
-  serverTCP._server?.on("connection", (socket) => {
-  console.log("[MB] nový klient pripojený:", socket.remoteAddress, "port", socket.remotePort);
-  socket.on("close", () => console.log("[MB] klient odpojený:", socket.remoteAddress));
-  socket.on("error", (err) => console.error("[MB] socket error:", err.message));
-  });
-  </script>
 
   <!-- Načítanie hlavnej scény po načítaní DOM -->
   <script src="sim_scripts/threeScene.js"></script>
