@@ -41,8 +41,7 @@ const TICK_MS     = parseInt(process.env.TICK_MS  || "100",  10);
    DEBUG – nastav cez env DEBUG
    napr. DEBUG=*, alebo DEBUG=mb,ws,tick,coils,io,snapshot,map
    ========================= */
-function ts()
-{
+function ts() {
   const d = new Date();
   return d.toISOString().split("T")[1].replace("Z", "");
 }
@@ -54,19 +53,15 @@ const DEBUG = new Set(
     .filter(Boolean)
 );
 
-function dbg(tag, ...args)
-{
-  if (DEBUG.has("*") || DEBUG.has(tag))
-  {
+function dbg(tag, ...args) {
+  if (DEBUG.has("*") || DEBUG.has(tag)) {
     console.log(`[${ts()}][${tag}]`, ...args);
   }
 }
 
-function coilsBits(buf, from = 0, to = 31)
-{
+function coilsBits(buf, from = 0, to = 31) {
   const bits = [];
-  for (let i = from; i <= to; i++)
-  {
+  for (let i = from; i <= to; i++) {
     const byte = buf[i >> 3] || 0;
     const bit  = (byte >> (i & 7)) & 1;
     bits.push(bit);
@@ -74,12 +69,10 @@ function coilsBits(buf, from = 0, to = 31)
   return bits.join("");
 }
 
-function mappedCoilsLine(map, buf)
-{
+function mappedCoilsLine(map, buf) {
   if (!map?.coils) return "(žiadne coils)";
   const parts = [];
-  for (const [addrStr, conf] of Object.entries(map.coils))
-  {
+  for (const [addrStr, conf] of Object.entries(map.coils)) {
     const a   = parseInt(addrStr, 10);
     const idx = a - 1;
     const byte = buf[idx >> 3] || 0;
@@ -93,26 +86,21 @@ function mappedCoilsLine(map, buf)
    VERZIA (len log)
    ========================= */
 let appVersion = "embedded";
-try
-{
+try {
   const pkgDev = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
   if (pkgDev?.version) appVersion = pkgDev.version;
 }
-catch
-{
-  try
-  {
+catch {
+  try {
     const pkgSnap = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
     if (pkgSnap?.version) appVersion = pkgSnap.version;
   }
-  catch
-  {
+  catch {
     if (process.env.APP_VERSION) appVersion = process.env.APP_VERSION;
   }
 }
 
-function openUrl(url)
-{
+function openUrl(url) {
   if (NO_OPEN) return;
   const platform = os.platform();
   if (platform === "win32") exec(`start "" "${url}"`, { windowsHide: true });
@@ -126,16 +114,14 @@ function openUrl(url)
 const root = __dirname;
 const app = express();
 
-app.use((_, res, next) =>
-{
+app.use((_, res, next) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
   next();
 });
 
 app.use(express.static(root, {
-  setHeaders: (res, filePath) =>
-  {
+  setHeaders: (res, filePath) => {
     if (filePath.endsWith(".wasm")) res.setHeader("Content-Type", "application/wasm");
     if (filePath.endsWith(".js"))   res.setHeader("Content-Type", "application/javascript; charset=utf-8");
   }
@@ -144,14 +130,12 @@ app.use(express.static(root, {
 app.get("/healthz", (_req, res) => res.status(200).json({ ok: true }));
 app.get("/readyz",  (_req, res) => res.status(200).json({ ok: true }));
 
-const server = app.listen(HTTP_PORT, () =>
-{
+const server = app.listen(HTTP_PORT, () => {
   const port = server.address().port;
   const url = `http://localhost:${port}/simulator.html`;
 
   console.log(`🚀 Spúšťam ST Simulátor v${appVersion}, Node.js ${process.version}`);
-  try
-  {
+  try {
     const wsVer = JSON.parse(fs.readFileSync(require.resolve("ws/package.json"), "utf8")).version;
     const jmVer = JSON.parse(fs.readFileSync(require.resolve("jsmodbus/package.json"), "utf8")).version;
     console.log(`🔌 Knižnice: ws v${wsVer}, jsmodbus v${jmVer}`);
@@ -171,38 +155,31 @@ let IO = { inputs: {}, outputs: {} };
 let lastBrowserClient = null;
 let currentSceneMap = null;
 
-function updateIO(newIO, source = "?", prev = null)
-{
+function updateIO(newIO, source = "?", prev = null) {
   if (!prev) prev = JSON.parse(JSON.stringify(IO));
 
   IO.inputs  = { ...IO.inputs,  ...newIO.inputs  };
   IO.outputs = { ...IO.outputs, ...newIO.outputs };
 
-  for (const [k, v] of Object.entries(IO.inputs || {}))
-  {
-    if (prev.inputs?.[k] !== v)
-    {
+  for (const [k, v] of Object.entries(IO.inputs || {})) {
+    if (prev.inputs?.[k] !== v) {
       console.log(`[IO][${source}] inputs.${k} zmenené: ${prev.inputs?.[k]} → ${v}`);
     }
   }
 
-  for (const [k, v] of Object.entries(IO.outputs || {}))
-  {
-    if (prev.outputs?.[k] !== v)
-    {
+  for (const [k, v] of Object.entries(IO.outputs || {})) {
+    if (prev.outputs?.[k] !== v) {
       console.log(`[IO][${source}] outputs.${k} zmenené: ${prev.outputs?.[k]} → ${v}`);
     }
   }
 }
 
-function wsHeartbeat(ws)
-{
+function wsHeartbeat(ws) {
   ws.isAlive = true;
   ws.on("pong", () => { ws.isAlive = true; });
 }
 
-wss.on("connection", (ws) =>
-{
+wss.on("connection", (ws) => {
   lastBrowserClient = ws;
   wsHeartbeat(ws);
   console.log("WS: simulátor pripojený");
@@ -210,17 +187,13 @@ wss.on("connection", (ws) =>
   // po pripojení odošleme aktuálny IO stav
   ws.send(JSON.stringify({ type: "sync", IO }));
 
-  ws.on("message", (msg) =>
-  {
-    try
-    {
+  ws.on("message", (msg) => {
+    try {
       const data = JSON.parse(msg.toString());
 
       // ⚠️ prijímame z browsera LEN outputs (inputs riadi Modbus)
-      if (data?.type === "io" && data.IO)
-      {
-        if (data.IO.inputs && Object.keys(data.IO.inputs).length)
-        {
+      if (data?.type === "io" && data.IO) {
+        if (data.IO.inputs && Object.keys(data.IO.inputs).length) {
           console.warn("[WS] IGNORUJEM inputs z browsera:", data.IO.inputs);
         }
 
@@ -229,30 +202,24 @@ wss.on("connection", (ws) =>
         updateIO(onlyOutputs, "WS");
       }
 
-      if (data?.type === "scene" && data.name)
-      {
+      if (data?.type === "scene" && data.name) {
         console.log("[WS] Aktívna scéna:", data.name);
-        if (data.map)
-        {
+        if (data.map) {
           currentSceneMap = data.map;
           dbg("map", "Coils mapa:", Object.keys(currentSceneMap.coils || {}).length);
           dbg("map", "Holding:",   Object.keys(currentSceneMap.holding || {}).length);
           dbg("map", "Input:",     Object.keys(currentSceneMap.input   || {}).length);
-        }
-        else
-        {
+        } else {
           console.warn("[WS] Scéna prišla bez mapy!");
         }
       }
     }
-    catch (e)
-    {
+    catch (e) {
       console.warn("WS: neviem parsovať správu:", e.message);
     }
   });
 
-  ws.on("close", () =>
-  {
+  ws.on("close", () => {
     if (lastBrowserClient === ws) lastBrowserClient = null;
     console.log("WS: simulátor odpojený");
   });
@@ -260,20 +227,16 @@ wss.on("connection", (ws) =>
   ws.on("error", (err) => console.warn("WS: chyba spojenia:", err?.message || err));
 });
 
-const wsPingTimer = setInterval(() =>
-{
-  wss.clients.forEach((ws) =>
-  {
+const wsPingTimer = setInterval(() => {
+  wss.clients.forEach((ws) => {
     if (ws.isAlive === false) return ws.terminate();
     ws.isAlive = false;
     try { ws.ping(); } catch {}
   });
 }, 10000);
 
-const wsHbTimer = setInterval(() =>
-{
-  if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN)
-  {
+const wsHbTimer = setInterval(() => {
+  if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) {
     lastBrowserClient.send(JSON.stringify({ type: "hb", ts: Date.now() }));
   }
 }, 1000);
@@ -281,8 +244,7 @@ const wsHbTimer = setInterval(() =>
 /* =========================
    MODBUS TCP (jsmodbus)
    ========================= */
-const setBit = (buf, bitIndex, value) =>
-{
+const setBit = (buf, bitIndex, value) => {
   const byte = bitIndex >> 3;
   const bit  = bitIndex & 7;
   const mask = 1 << bit;
@@ -290,22 +252,18 @@ const setBit = (buf, bitIndex, value) =>
   buf[byte]  = value ? (cur | mask) : (cur & ~mask);
 };
 
-function safeGetBit(buf, bitIndex)
-{
-  try
-  {
+function safeGetBit(buf, bitIndex) {
+  try {
     const byte = buf[bitIndex >> 3];
     if (typeof byte !== "number") return false;
     return ((byte >> (bitIndex & 7)) & 1) === 1;
   }
-  catch
-  {
+  catch {
     return false;
   }
 }
 
-function safeReadU16(buf, regIndex)
-{
+function safeReadU16(buf, regIndex) {
   try { return buf.readUInt16BE(regIndex * 2); }
   catch { return 0; }
 }
@@ -320,13 +278,11 @@ const MB = {
   discrete: Buffer.alloc(128),
 };
 
-function getByPath(obj, path)
-{
+function getByPath(obj, path) {
   return path.split(".").reduce((o, k) => (o ? o[k] : undefined), obj);
 }
 
-function setByPath(obj, path, value)
-{
+function setByPath(obj, path, value) {
   const keys  = path.split(".");
   const last  = keys.pop();
   const target = keys.reduce((o, k) => (o ? o[k] : undefined), obj);
@@ -334,23 +290,36 @@ function setByPath(obj, path, value)
 }
 
 /**
+ * Shadow cache (Map + timeout)
+ */
+const shadowCoils = new Map(); // key = mbIndex, value = { val, ts }
+const SHADOW_HOLD_MS = 500;
+
+function shadowSet(mbIndex, val) {
+  shadowCoils.set(mbIndex, { val: val ? 1 : 0, ts: Date.now() });
+}
+function shadowGet(mbIndex) {
+  const rec = shadowCoils.get(mbIndex);
+  if (!rec) return null;
+  if (Date.now() - rec.ts > SHADOW_HOLD_MS) return null;
+  return rec.val;
+}
+
+/**
  * Simulátor -> Modbus (holding/input registre a coils mapované na outputs)
  */
-function ioToModbus()
-{
+function ioToModbus() {
   if (!currentSceneMap) return;
 
-  // holding registre – prepočítaj zo stavov IO.outputs (ak sú tak mapované)
-  for (const [addr, conf] of Object.entries(currentSceneMap.holding || {}))
-  {
+  // holding registre – prepočítaj zo stavov IO.outputs
+  for (const [addr, conf] of Object.entries(currentSceneMap.holding || {})) {
     const val    = getByPath(IO, conf.path);
     const scaled = Math.round((val || 0) * (conf.scale || 1));
     writeU16BE(MB.holding, addr - 40001, scaled);
   }
 
-  // input registre – čítajú sa zo scény (outputs) a ukladajú do MB.input
-  for (const [addr, conf] of Object.entries(currentSceneMap.input || {}))
-  {
+  // input registre – čítajú sa zo scény (outputs)
+  for (const [addr, conf] of Object.entries(currentSceneMap.input || {})) {
     const val    = getByPath(IO, conf.path);
     const scaled = Math.round((val || 0) * (conf.scale || 1));
     writeU16BE(MB.input, addr - 30001, scaled);
@@ -358,66 +327,41 @@ function ioToModbus()
 }
 
 /**
- * Modbus -> Simulátor (coils mapované na inputs) + spätné zrkadlenie outputs do coils
+ * Modbus -> Simulátor (coils → inputs) + spätné zrkadlenie outputs do coils
  */
-function modbusToIo()
-{
+function modbusToIo() {
   if (!currentSceneMap) return;
 
   const prev = JSON.parse(JSON.stringify(IO));
 
-  // COILS
-  for (const [addrStr, conf] of Object.entries(currentSceneMap.coils || {}))
-  {
-    const a       = parseInt(addrStr, 10); // 1-based adresa z mapy
-    const mbIndex = a - 1;                 // 0-based index v MB.coils
+  for (const [addrStr, conf] of Object.entries(currentSceneMap.coils || {})) {
+    const mbIndex = parseInt(addrStr, 10) - 1;
+    let bitVal = safeGetBit(MB.coils, mbIndex);
 
-    if (conf.path.startsWith("inputs"))
-    {
-      // PLC -> Simulátor (čítaj z MB.coils)
-      const bitVal = safeGetBit(MB.coils, mbIndex);
-      const curr   = getByPath(IO, conf.path);
-      if (curr !== bitVal)
-      {
-        dbg("coils", `[COIL<-MB_TICK] a=${a} idx=${mbIndex} path=${conf.path} : ${curr} → ${bitVal}`);
+    // použijeme shadow cache
+    const sh = shadowGet(mbIndex);
+    if (sh === 1 && bitVal === false) {
+      bitVal = true;
+    }
+
+    if (conf.path.startsWith("inputs")) {
+      if (getByPath(IO, conf.path) !== bitVal) {
         setByPath(IO, conf.path, bitVal);
       }
-    }
-    else if (conf.path.startsWith("outputs"))
-    {
-      // Simulátor -> PLC (zapisuj do MB.coils)
+    } else if (conf.path.startsWith("outputs")) {
       const val = !!getByPath(IO, conf.path);
-      const before = safeGetBit(MB.coils, mbIndex) ? 1 : 0;
-      dbg("coils", `[COIL->MB_TICK] a=${a} idx=${mbIndex} path=${conf.path} : ${before} → ${val ? 1 : 0}`);
       setBit(MB.coils, mbIndex, val);
     }
   }
 
-  // HOLDING – ak PLC píše do holdingov, premapuj späť do IO
-  for (const [addr, conf] of Object.entries(currentSceneMap.holding || {}))
-  {
-    const raw  = safeReadU16(MB.holding, addr - 40001);
-    const val  = raw / (conf.scale || 1);
-    const curr = getByPath(IO, conf.path);
-
-    if (curr !== val)
-    {
-      dbg("tick", `[HOLDING<-MB_TICK] @${addr} path=${conf.path} : ${curr} → ${val}`);
-      setByPath(IO, conf.path, val);
-    }
+  for (const [addr, conf] of Object.entries(currentSceneMap.holding || {})) {
+    const raw = safeReadU16(MB.holding, addr - 40001);
+    setByPath(IO, conf.path, raw / (conf.scale || 1));
   }
 
-  // Ulož rozdiely + sync do klienta
-  updateIO(IO, "TICK", prev);
+  updateIO(IO, prev);
 
-  if (DEBUG.has("snapshot"))
-  {
-    dbg("snapshot", "COILS bits [0..31]:", coilsBits(MB.coils, 0, 31));
-    if (currentSceneMap) dbg("snapshot", "MAP:", mappedCoilsLine(currentSceneMap, MB.coils));
-  }
-
-  if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN)
-  {
+  if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) {
     lastBrowserClient.send(JSON.stringify({ type: "sync", IO }));
   }
 }
@@ -434,70 +378,113 @@ const modbusServer = new Modbus.server.TCP(netServer, {
   unitId: MB_UNIT_ID
 });
 
-// Jednotlivý zápis coil – sem chodí PLC (addr je 0-based)
-modbusServer.on("postWriteSingleCoil", (req) =>
-{
-  const addr = req.body?.address ?? 0;   // 0-based z PLC
+// Helper: vypíš obsah coils v rozsahu
+function dumpCoils(buf, from, qty) {
+  const bits = [];
+  for (let i = 0; i < qty; i++) {
+    bits.push(safeGetBit(buf, from + i) ? 1 : 0);
+  }
+  return bits.join("");
+}
+
+// Jednotlivý zápis coil
+modbusServer.on("postWriteSingleCoil", (req) => {
+  const addr = req.body?.address ?? 0;  // 0-based
   const val  = req.body?.value ? 1 : 0;
 
   console.log(`[MB] writeCoil @${addr} = ${val}`);
+  console.log(`[MB][DUMP] coils[${addr}] = ${val}, full= ${dumpCoils(MB.coils, 0, 16)}`);
 
-  // Zapíš do 0-based indexu v MB.coils
   setBit(MB.coils, addr, !!val);
-  dbg("mb", `po zápise: MB.coils[${addr}] = ${safeGetBit(MB.coils, addr) ? 1 : 0}`);
+  shadowSet(addr, !!val);
 
-  // Okamžitá projekcia do IO (mapa je 1-based)
   const sceneAddr = addr + 1;
-  if (currentSceneMap?.coils?.[sceneAddr])
-  {
+  if (currentSceneMap?.coils?.[sceneAddr]) {
     const path = currentSceneMap.coils[sceneAddr].path;
     const prev = JSON.parse(JSON.stringify(IO));
-
-    dbg("coils", `[COIL<-MB_WRITE] a=${sceneAddr} idx=${addr} path=${path} = ${!!val}`);
     setByPath(IO, path, !!val);
-    updateIO(IO, "MB_WRITE", prev);
+    updateIO(IO, prev);
 
-    if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN)
-    {
+    if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) {
       lastBrowserClient.send(JSON.stringify({ type: "sync", IO }));
     }
   }
-  else
-  {
-    dbg("coils", `[COIL<-MB_WRITE] a=${sceneAddr} (nemapované)`);
+});
+
+// Zápis viacerých coilov
+modbusServer.on("postWriteMultipleCoils", (req) => {
+  const addr = req?.body?.address ?? "?";
+  const qty  = req?.body?.quantity ?? "?";
+  console.log(`[MB] writeMultiCoils @${addr} qty=${qty}`);
+
+  if (typeof addr === "number" && typeof qty === "number") {
+    const dump = dumpCoils(MB.coils, addr, qty);
+    console.log(`[MB][MULTI_DUMP] ${addr}..${addr+qty-1}: ${dump}`);
+
+    for (let i = 0; i < qty; i++) {
+      const mbIndex = addr + i;
+      let bitVal = safeGetBit(MB.coils, mbIndex);
+
+      const sh = shadowGet(mbIndex);
+      if (sh === 1 && bitVal === false) {
+        bitVal = true;
+        setBit(MB.coils, mbIndex, 1);
+      }
+
+      const sceneAddr = mbIndex + 1;
+      if (currentSceneMap?.coils?.[sceneAddr]) {
+        const path = currentSceneMap.coils[sceneAddr].path;
+        const prev = JSON.parse(JSON.stringify(IO));
+
+        if (getByPath(IO, path) !== bitVal) {
+          setByPath(IO, path, bitVal);
+          console.log(`[IO][MB_MULTI] ${path} zmenené: ${!bitVal} → ${bitVal}`);
+          updateIO(IO, prev);
+        }
+      }
+    }
   }
 });
 
-// modbusServer.on("postWriteMultipleCoils", (req) => {
-//   console.log(`[MB] writeMultiCoils @${req.address} qty=${req.quantity}`);
-// });
-// modbusServer.on("postWriteSingleRegister", (req) => {
-//   console.log(`[MB] writeHolding @${40001 + req.address} = ${req.value}`);
-// });
-// modbusServer.on("postWriteMultipleRegisters", (req) => {
-//   console.log(`[MB] writeMultiHolding starting @${40001 + req.address} qty=${req.quantity}`);
-// });
+// Jednotlivý holding register
+modbusServer.on("postWriteSingleRegister", (req) => {
+  const addr = req?.body?.address ?? "?";
+  const val  = req?.body?.value;
+  console.log(`[MB] writeHolding @${40001 + addr} = ${val}`);
+});
 
-modbusServer.on("connection", (client) =>
-{
+// Viac holdingov
+modbusServer.on("postWriteMultipleRegisters", (req) => {
+  const addr = req?.body?.address ?? "?";
+  const qty  = req?.body?.quantity ?? "?";
+  console.log(`[MB] writeMultiHolding starting @${40001 + addr} qty=${qty}`);
+
+  if (typeof addr === "number" && typeof qty === "number") {
+    let vals = [];
+    for (let i = 0; i < qty; i++) {
+      vals.push(safeReadU16(MB.holding, addr + i));
+    }
+    console.log(`[MB][MULTI_HOLD_DUMP] ${addr}..${addr+qty-1}:`, vals.join(", "));
+  }
+});
+
+
+modbusServer.on("connection", (client) => {
   try { client.setKeepAlive?.(true, 10000); } catch {}
   const sock = client.socket || client._socket || {};
   console.log("[MB] nový klient pripojený:", sock.remoteAddress || "?", "port", sock.remotePort || "?");
 });
 
-modbusServer.on("close", (client) =>
-{
+modbusServer.on("close", (client) => {
   const sock = client?.socket || client?._socket || {};
   console.log("[MB] klient odpojený:", sock.remoteAddress || "?");
 });
 
-modbusServer.on("error", (err) =>
-{
+modbusServer.on("error", (err) => {
   console.error("[MB] server error:", err?.message || err);
 });
 
-netServer.listen(MODBUS_PORT, "0.0.0.0", () =>
-{
+netServer.listen(MODBUS_PORT, "0.0.0.0", () => {
   const addr = netServer.address();
   console.log(`✅ MB: Modbus TCP beží na ${addr.address}:${addr.port}, UnitID=${MB_UNIT_ID}`);
 });
@@ -505,16 +492,14 @@ netServer.listen(MODBUS_PORT, "0.0.0.0", () =>
 /* =========================
    PERIODICKÁ SYNCHRONIZÁCIA IO <-> MB
    ========================= */
-const tick = setInterval(() =>
-{
-  try
-  {
+const tick = setInterval(() => {
+  try {
     if (DEBUG.has("tick")) dbg("tick", "— TICK —");
     ioToModbus();
     modbusToIo();
+    //console.log("[DBG] ALL COILS:", dumpCoils(MB.coils, 0, 16));
   }
-  catch (e)
-  {
+  catch (e) {
     console.warn("Tick error:", e?.message || e);
   }
 }, TICK_MS);
@@ -525,8 +510,7 @@ const tick = setInterval(() =>
 process.on("uncaughtException",  (err) => console.error("Uncaught:", err));
 process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
 
-function shutdown(sig = "SIGTERM")
-{
+function shutdown(sig = "SIGTERM") {
   console.log(`\n🔻 ${sig} prijatý – ukončujem...`);
   clearInterval(tick);
   clearInterval(wsPingTimer);

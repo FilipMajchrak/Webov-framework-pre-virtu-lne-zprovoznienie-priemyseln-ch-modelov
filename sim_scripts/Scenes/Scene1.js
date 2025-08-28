@@ -9,7 +9,6 @@ if (!window.IO) {
   window.IO = {
     inputs: {
       start: false,
-      test1:false,
       conv: false,
       conv2: false,
       p1: false,
@@ -36,32 +35,31 @@ if (!window.IO) {
 Scene1.prototype.getModbusMap = function ()
 {
   return {
-      coils: {
+    coils: {
       1: { path: "inputs.start" },
-      2: { path: "inputs.test1" },
+      2: { path: "inputs.conv" },
       3: { path: "inputs.conv2" },
       4: { path: "inputs.p1" },
       5: { path: "inputs.p2" },
-      6: { path: "inputs.p3" },
-      11: { path: "outputs.conv1end" },
-      12: { path: "outputs.conv2end" },
-      13: { path: "outputs.s1" },
-      14: { path: "outputs.s2" },
-      15: { path: "outputs.s3" },
-      16: { path: "outputs.p1_ex" },
-      17: { path: "outputs.p2_ex" },
-      18: { path: "outputs.p3_ex" }
+      6: { path: "inputs.p3" }
     },
     holding: {
-      40001: { path: "outputs.dist1", scale: 100 },
-      40002: { path: "outputs.dist1", scale: 100 } // alebo dummy hodnota
+      40001: { path: "outputs.conv1end" },
+      40002: { path: "outputs.conv2end" },
+      40003: { path: "outputs.s1" },
+      40004: { path: "outputs.s2" },
+      40005: { path: "outputs.s3" },
+      40006: { path: "outputs.p1_ex" },
+      40007: { path: "outputs.p2_ex" },
+      40008: { path: "outputs.p3_ex" },
+      40009: { path: "outputs.dist1", scale: 100 }
     },
     input: {
-      30001: { path: "outputs.dist1", scale: 100 },
-      30002: { path: "outputs.dist1", scale: 100 } // dummy
+      30001: { path: "outputs.dist1", scale: 100 }
     }
   };
 };
+
 
 
 // ============================================
