@@ -1,28 +1,66 @@
+// ============================================
 // Inicializácia globálneho I/O systému (vstupy + výstupy)
-window.IO = {
-  inputs: {
-    start: false,
-    conv: false,
-    conv2: false,
-    p1: false,
-    p2: false,
-    p3: false
-  },
-  outputs: {
-    conv1end:false,
-    conv2end:false,
-    s1: false,
-    s2: false,
-    s3: false,
-    p1_rec: true,
-    p2_rec: true,
-    p3_rec: true,
-    p1_ex:  false,
-    p2_ex:  false, 
-    p3_ex:  false,  
-    dist1: 10
-  }
+// ============================================
+
+// Ak IO ešte neexistuje, vytvor ho s default hodnotami
+// → hodnoty sa použijú len ako inicializácia pri prvom spustení
+// → ďalej už PLC/Modbus alebo simulátor menia hodnoty a neprepíšu sa späť
+if (!window.IO) {
+  window.IO = {
+    inputs: {
+      start: false,
+      conv: false,
+      conv2: false,
+      p1: false,
+      p2: false,
+      p3: false
+    },
+    outputs: {
+      conv1end: false,
+      conv2end: false,
+      s1: false,
+      s2: false,
+      s3: false,
+      p1_rec: true,
+      p2_rec: true,
+      p3_rec: true,
+      p1_ex: false,
+      p2_ex: false,
+      p3_ex: false,
+      dist1: 10
+    }
+  };
+}
+//Modbus mapovanie
+Scene1.prototype.getModbusMap = function ()
+{
+  return {
+    coils: {
+      1: { path: "inputs.start" },
+      2: { path: "inputs.conv" },
+      3: { path: "inputs.conv2" },
+      4: { path: "inputs.p1" },
+      5: { path: "inputs.p2" },
+      6: { path: "inputs.p3" }
+    },
+    holding: {
+      40001: { path: "outputs.conv1end" },
+      40002: { path: "outputs.conv2end" },
+      40003: { path: "outputs.s1" },
+      40004: { path: "outputs.s2" },
+      40005: { path: "outputs.s3" },
+      40006: { path: "outputs.p1_ex" },
+      40007: { path: "outputs.p2_ex" },
+      40008: { path: "outputs.p3_ex" },
+      40009: { path: "outputs.dist1", scale: 100 }
+    },
+    input: {
+      30001: { path: "outputs.dist1", scale: 100 }
+    }
+  };
 };
+
+
 
 // ============================================
 // ============== Scene1 - KONŠTRUKTOR =========
