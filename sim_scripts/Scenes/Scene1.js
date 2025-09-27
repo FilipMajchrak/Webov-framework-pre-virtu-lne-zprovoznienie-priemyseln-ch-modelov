@@ -31,34 +31,40 @@ if (!window.IO) {
     }
   };
 }
+
 //Modbus mapovanie
 Scene1.prototype.getModbusMap = function ()
 {
   return {
-    coils: {
-      1: { path: "inputs.start" },
-      2: { path: "inputs.conv" },
-      3: { path: "inputs.conv2" },
-      4: { path: "inputs.p1" },
-      5: { path: "inputs.p2" },
-      6: { path: "inputs.p3" }
+    inputCoils: {
+      32768: { path: "inputs.start" },
+      32769: { path: "inputs.conv" },
+      32770: { path: "inputs.conv2" },
+      32771: { path: "inputs.p1" },
+      32772: { path: "inputs.p2" },
+      32773: { path: "inputs.p3" }
     },
-    holding: {
-      40001: { path: "outputs.conv1end" },
-      40002: { path: "outputs.conv2end" },
-      40003: { path: "outputs.s1" },
-      40004: { path: "outputs.s2" },
-      40005: { path: "outputs.s3" },
-      40006: { path: "outputs.p1_ex" },
-      40007: { path: "outputs.p2_ex" },
-      40008: { path: "outputs.p3_ex" },
-      40009: { path: "outputs.dist1", scale: 100 }
+
+    outputCoils: {
+      32768: { path: "outputs.conv1end" },
+      32769: { path: "outputs.conv2end" },
+      32770: { path: "outputs.s1" },
+      32771: { path: "outputs.s2" },
+      32772: { path: "outputs.s3" },
+      32773: { path: "outputs.p1_ex" },
+      32774: { path: "outputs.p2_ex" },
+      32775: { path: "outputs.p3_ex" },
+      32776: { path: "outputs.p1_rec" },
+      32777: { path: "outputs.p2_rec" },
+      32778: { path: "outputs.p3_rec" }
     },
-    input: {
-      30001: { path: "outputs.dist1", scale: 100 }
+
+    outputRegisters: {
+      32768: { path: "outputs.dist1", scale: 100 }  // analógový senzor
     }
   };
 };
+
 
 
 
