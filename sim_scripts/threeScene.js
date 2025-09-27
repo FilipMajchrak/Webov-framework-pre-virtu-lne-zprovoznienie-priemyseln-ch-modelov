@@ -7,24 +7,41 @@ window.ws.onopen = () =>
 {
   console.log("[WS] Spojenie otvorené");
 
-  // meno scény sa pošle dynamicky neskôr, po jej načítaní
+  // po otvorení spojenia odošli aj aktuálnu scénu a mapu
+  if (window.sceneManager?.currentScene) 
+  {
+    const scene = window.sceneManager.currentScene;
+    const sceneName = scene.constructor.name; // napr. "Scene1"
+    const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
+
+    window.ws.send(JSON.stringify({ 
+      type: "scene", 
+      name: sceneName,
+      map: modbusMap
+    }));
+  }
 };
 
 window.ws.onclose = () => console.log("[WS] Spojenie zatvorené");
 window.ws.onerror = (e) => console.error("[WS] Chyba:", e);
 
-window.ws.onmessage = (event) => {
-  try {
+window.ws.onmessage = (event) => 
+{
+  try 
+  {
     const data = JSON.parse(event.data);
 
-    if (data.type === "sync" && data.IO) {
+    if (data.type === "sync" && data.IO) 
+    {
       // prepíš IO z hodnotami zo servera
       window.IO.inputs  = { ...window.IO.inputs,  ...data.IO.inputs };
       window.IO.outputs = { ...window.IO.outputs, ...data.IO.outputs };
 
       //console.log("[WS] Sync IO prijaté:", window.IO);
     }
-  } catch (e) {
+  } 
+  catch (e) 
+  {
     console.warn("[WS] Chyba pri spracovaní správy:", e.message);
   }
 };
@@ -67,18 +84,7 @@ window.onload = function ()
   const scene = new Scene1(camera);
   window.sceneManager.loadScene(scene); // Načíta scénu a zavolá init()
 
-  // pošli na server, že sa načítala práve táto scéna (dynamicky podľa názvu triedy)
-  if (window.ws && window.ws.readyState === WebSocket.OPEN)
-  {
-    const sceneName = scene.constructor.name; // → "Scene1"
-    const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
-
-    window.ws.send(JSON.stringify({ 
-      type: "scene", 
-      name: sceneName,
-      map: modbusMap
-    }));
-  }
+  // pošleme na server info o scéne až keď sa otvorí WebSocket (viď onopen vyššie)
 
   // ==========================
   // Prispôsobenie renderera a kamery pri zmene veľkosti okna
@@ -107,9 +113,10 @@ window.onload = function ()
       PLC_Update();
     }
     
+    // posielaj celé IO (inputs aj outputs), nie len outputs
     if (window.ws && window.ws.readyState === WebSocket.OPEN) 
     {
-        window.ws.send(JSON.stringify({ type: "io", IO: { outputs: window.IO.outputs } }));
+      window.ws.send(JSON.stringify({ type: "io", IO: window.IO }));
     }
 
     // Aktualizuj IO tabuľku (len ak sa zmenila)
