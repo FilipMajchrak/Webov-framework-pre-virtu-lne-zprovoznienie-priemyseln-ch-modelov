@@ -215,7 +215,7 @@ Scene1.prototype.initScene = function ()
       color: 0x00ff00,
       direction: [-1, 0, 0],
       moveDistance: 6,
-      speed: 2,
+      speed: 4,
       getInputFn: () => IO.inputs[`p${i}`],
       setOutputFn: (v) => IO.outputs[`p${i}_ex`] = v,
       setRetractedFn: (v) => IO.outputs[`p${i}_rec`] = v,
