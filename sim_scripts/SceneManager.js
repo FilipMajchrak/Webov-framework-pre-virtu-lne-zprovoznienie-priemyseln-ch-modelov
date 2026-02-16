@@ -9,20 +9,23 @@ function SceneManager(renderer, camera)
   this.currentScene = null;   // Aktívna (nahratá) scéna – inštancia napr. Scene1
 }
 
-SceneManager.prototype.loadScene = function(newScene)
+SceneManager.prototype.loadScene = async function (newScene)
 {
-  // Ak už nejaká scéna existuje → najprv ju zlikviduj (uvolni zdroje, objekty atď.)
-  if (this.currentScene)
+  // zruš starú scénu bezpečne
+  if (this.currentScene && typeof this.currentScene.dispose === "function")
   {
     this.currentScene.dispose();
   }
 
-  // Nastav novú scénu ako aktívnu
   this.currentScene = newScene;
 
-  // Zavolaj jej inicializačnú metódu
-  this.currentScene.init();
+  // init môže byť sync alebo async → await zvládne oboje
+  if (this.currentScene && typeof this.currentScene.init === "function")
+  {
+    await this.currentScene.init();
+  }
 };
+
 
 SceneManager.prototype.update = function (delta)
 {

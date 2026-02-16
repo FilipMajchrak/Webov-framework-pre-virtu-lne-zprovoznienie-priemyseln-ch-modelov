@@ -3,23 +3,10 @@
 // ============================================
 window.ws = new WebSocket(`ws://${location.hostname}:${location.port}`);
 
-window.ws.onopen = () => 
+window.ws.onopen = () =>
 {
   console.log("[WS] Spojenie otvorené");
-
-  // po otvorení spojenia odošli aj aktuálnu scénu a mapu
-  if (window.sceneManager?.currentScene) 
-  {
-    const scene = window.sceneManager.currentScene;
-    const sceneName = scene.constructor.name; // napr. "Scene1"
-    const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
-
-    window.ws.send(JSON.stringify({ 
-      type: "scene", 
-      name: sceneName,
-      map: modbusMap
-    }));
-  }
+  sendSceneToServer();
 };
 
 window.ws.onclose = () => console.log("[WS] Spojenie zatvorené");
@@ -46,11 +33,28 @@ window.ws.onmessage = (event) =>
   }
 };
 
+function sendSceneToServer()
+{
+  if (!window.ws || window.ws.readyState !== WebSocket.OPEN) return;
+  if (!window.sceneManager?.currentScene) return;
+
+  const scene = window.sceneManager.currentScene;
+  const sceneName = scene.constructor.name;
+  const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
+
+  window.ws.send(JSON.stringify({
+    type: "scene",
+    name: sceneName,
+    map: modbusMap
+  }));
+
+  console.log("[WS] Scene+map odoslané:", sceneName);
+}
 
 // ============================================
 // window.onload – inicializácia aplikácie
 // ============================================
-window.onload = function ()
+window.onload = async function ()
 {
   // ==========================
   // Inicializácia Physijs (fyzikálny engine)
@@ -82,7 +86,9 @@ window.onload = function ()
 
   // tu si vytvoríš scénu (momentálne Scene1, ale môžeš vymeniť za Scene2 atď.)
   const scene = new Scene1(camera);
-  window.sceneManager.loadScene(scene); // Načíta scénu a zavolá init()
+  await window.sceneManager.loadScene(scene);
+
+  sendSceneToServer();
 
   // pošleme na server info o scéne až keď sa otvorí WebSocket (viď onopen vyššie)
 

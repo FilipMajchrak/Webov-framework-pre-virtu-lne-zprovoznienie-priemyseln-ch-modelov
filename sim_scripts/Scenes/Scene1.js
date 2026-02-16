@@ -32,42 +32,6 @@ if (!window.IO) {
   };
 }
 
-//Modbus mapovanie
-Scene1.prototype.getModbusMap = function ()
-{
-  return {
-    inputCoils: {
-      32768: { path: "inputs.start" },
-      32769: { path: "inputs.conv" },
-      32770: { path: "inputs.conv2" },
-      32771: { path: "inputs.p1" },
-      32772: { path: "inputs.p2" },
-      32773: { path: "inputs.p3" }
-    },
-
-    outputCoils: {
-      32768: { path: "outputs.conv1end" },
-      32769: { path: "outputs.conv2end" },
-      32770: { path: "outputs.s1" },
-      32771: { path: "outputs.s2" },
-      32772: { path: "outputs.s3" },
-      32773: { path: "outputs.p1_ex" },
-      32774: { path: "outputs.p2_ex" },
-      32775: { path: "outputs.p3_ex" },
-      32776: { path: "outputs.p1_rec" },
-      32777: { path: "outputs.p2_rec" },
-      32778: { path: "outputs.p3_rec" }
-    },
-
-    outputRegisters: {
-      32768: { path: "outputs.dist1", scale: 100 }  // analógový senzor
-    }
-  };
-};
-
-
-
-
 // ============================================
 // ============== Scene1 - KONŠTRUKTOR =========
 // ============================================
@@ -87,8 +51,32 @@ function Scene1(camera)
   this.loadedCount = 0;      // koľko modelov sa načítalo
   this.expectedLoads = 3;    // koľko sa má načítať (upraviť ak bude viac modelov)
 
-  this.initScene();          // spustenie hlavnej inicializácie
+  this.modbusMap = null;
+
+  //this.initScene();          // spustenie hlavnej inicializácie
 }
+
+//Modbus mapovanie
+Scene1.prototype.getModbusMap = function ()
+{
+  return this.modbusMap || {};
+};
+
+Scene1.prototype.init = async function ()
+{
+  // 1) načítaj mapu
+  try {
+    const res = await fetch("sim_scripts/Scenes/modbusMap_scene1.json");
+    this.modbusMap = await res.json();
+    console.log("[Scene1] Modbus map loaded", this.modbusMap);
+  } catch (e) {
+    console.error("[Scene1] Modbus map load failed", e);
+    this.modbusMap = null; // fallback
+  }
+
+  // 2) potom rob zvyšok (vrátane initScene)
+  this.initScene();
+};
 
 // Inicializácia scény – pridanie svetiel, objektov, senzorov, piestov...
 // ============================================
@@ -392,7 +380,7 @@ Scene1.prototype.addHelpers = function ()
 };
 
 // Voliteľné hooky
-Scene1.prototype.init = function () {};
+//Scene1.prototype.init = function () {};
 Scene1.prototype.dispose = function () {};
 
 // ======== Hlavný update cyklus scény ========

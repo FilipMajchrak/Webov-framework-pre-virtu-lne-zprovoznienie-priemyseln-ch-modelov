@@ -31,11 +31,9 @@ const { exec } = require("child_process");
 const os = require("os");
 const net = require("net");
 
-try
-{
+try {
   require("dotenv").config();
-}
-catch {}
+} catch {}
 
 const { WebSocketServer } = require("ws");
 const Modbus = require("jsmodbus");
@@ -43,20 +41,20 @@ const Modbus = require("jsmodbus");
 /* =========================
    KONFIGURÁCIA
    ========================= */
-const HTTP_PORT   = process.env.HTTP_PORT ? Number(process.env.HTTP_PORT) : 0;  // HTTP port pre Express
-const NO_OPEN     = String(process.env.NO_OPEN || "").toLowerCase() === "true"; // ak true, neotvorí sa prehliadač
+const HTTP_PORT   = process.env.HTTP_PORT ? Number(process.env.HTTP_PORT) : 0;
+const NO_OPEN     = String(process.env.NO_OPEN || "").toLowerCase() === "true";
 
-const MB_HOST     = process.env.MB_HOST || "127.0.0.1"; // IP adresa PLC
-const MB_PORT     = parseInt(process.env.MB_PORT || "1502", 10); // Modbus port PLC
-const MB_UNIT_ID  = parseInt(process.env.MB_UNIT || "1", 10);    // Modbus Unit ID
-const TICK_MS     = parseInt(process.env.TICK_MS || "500", 10);  // časovač v ms pre hlavný cyklus
+const MB_HOST     = process.env.MB_HOST || "127.0.0.1";
+const MB_PORT     = parseInt(process.env.MB_PORT || "1502", 10);
+const MB_UNIT_ID  = parseInt(process.env.MB_UNIT || "1", 10);
+const TICK_MS     = parseInt(process.env.TICK_MS || "500", 10);
 
 /* =========================
    EXPRESS SERVER
    ========================= */
 const root = process.pkg
-  ? path.dirname(process.execPath) // priečinok, kde je simulator.exe
-  : __dirname;                     // pri node normálne
+  ? path.dirname(process.execPath)
+  : __dirname;
 
 const app = express();
 app.use(express.static(root));
@@ -83,9 +81,10 @@ const server = app.listen(HTTP_PORT, () =>
 const wss = new WebSocketServer({ server });
 console.log("WS server pripojený k Expressu.");
 
-let IO = { inputs: {}, outputs: {} }; // spoločná IO štruktúra
-let lastBrowserClient = null;         // referenciu si držíme na posledného klienta
-let currentSceneMap = null;           // mapovanie Modbus adries aktuálnej scény
+// ✅ Dôležité: držíme inputs/outputs ako objekty
+let IO = { inputs: {}, outputs: {} };
+let lastBrowserClient = null;
+let currentSceneMap = null;
 
 wss.on("connection", (ws) =>
 {
@@ -101,11 +100,13 @@ wss.on("connection", (ws) =>
     {
       const data = JSON.parse(msg.toString());
 
-      // ak príde IO správa, aktualizujeme inputs aj outputs
+      // ✅ Browser posiela iba outputs (inputs prichádzajú z Modbusu)
       if (data?.type === "io" && data.IO)
       {
-        if (data.IO.inputs)  IO.inputs  = { ...IO.inputs,  ...data.IO.inputs };
-        if (data.IO.outputs) IO.outputs = { ...IO.outputs, ...data.IO.outputs };
+        if (data.IO.outputs)
+        {
+          IO.outputs = { ...IO.outputs, ...data.IO.outputs };
+        }
       }
 
       // ak príde mapa scény, uložíme ju
@@ -113,6 +114,10 @@ wss.on("connection", (ws) =>
       {
         currentSceneMap = data.map;
         console.log("[WS] Mapa scény prijatá.");
+
+        // poistka: aby vetvy existovali
+        IO.inputs = IO.inputs || {};
+        IO.outputs = IO.outputs || {};
       }
     }
     catch (e)
@@ -123,26 +128,35 @@ wss.on("connection", (ws) =>
 
   ws.on("close", () =>
   {
-    lastBrowserClient = null;
+    if (lastBrowserClient === ws) lastBrowserClient = null;
   });
 });
 
 /* =========================
    HELPER FUNKCIE
    ========================= */
-// čítanie hodnoty z objektu podľa cesty "a.b.c"
 function getByPath(obj, path)
 {
   return path.split(".").reduce((o, k) => (o ? o[k] : undefined), obj);
 }
 
-// nastavenie hodnoty do objektu podľa cesty "a.b.c"
+// ✅ OPRAVA: setByPath vytvorí chýbajúce časti cesty (inputs/outputs/...)
 function setByPath(obj, path, value)
 {
   const keys = path.split(".");
-  const last = keys.pop();
-  const target = keys.reduce((o, k) => (o ? o[k] : undefined), obj);
-  if (target) target[last] = value;
+  let cur = obj;
+
+  for (let i = 0; i < keys.length - 1; i++)
+  {
+    const k = keys[i];
+    if (cur[k] === undefined || cur[k] === null || typeof cur[k] !== "object")
+    {
+      cur[k] = {};
+    }
+    cur = cur[k];
+  }
+
+  cur[keys[keys.length - 1]] = value;
 }
 
 /* =========================
@@ -173,12 +187,10 @@ socket.on("close", () =>
   setTimeout(connectModbus, 3000);
 });
 
-// prvý pokus o pripojenie
 connectModbus();
 
 /* =========================
    MODBUS ↔ IO FUNKCIE
-   Každá adresa sa číta/zapisuje samostatne podľa mapy.
    ========================= */
 async function modbusToIo()
 {
@@ -187,12 +199,17 @@ async function modbusToIo()
   // Čítanie discrete inputs (digitálne výstupy PLC)
   if (currentSceneMap.inputCoils)
   {
-    const addrs = Object.keys(currentSceneMap.inputCoils).map(a => parseInt(a, 10)).sort((a,b) => a - b);
-    const vals  = [];
+    const addrs = Object.keys(currentSceneMap.inputCoils)
+      .map(a => parseInt(a, 10))
+      .sort((a,b) => a - b);
+
+    const vals = [];
 
     for (const addr of addrs)
     {
       const conf = currentSceneMap.inputCoils[addr];
+      if (!conf?.path) continue;
+
       try
       {
         const resp = await mbClient.readDiscreteInputs(addr, 1);
@@ -217,12 +234,17 @@ async function modbusToIo()
   // Čítanie input registers (analógové vstupy PLC)
   if (currentSceneMap.inputRegisters)
   {
-    const addrs = Object.keys(currentSceneMap.inputRegisters).map(a => parseInt(a, 10)).sort((a,b) => a - b);
-    const vals  = [];
+    const addrs = Object.keys(currentSceneMap.inputRegisters)
+      .map(a => parseInt(a, 10))
+      .sort((a,b) => a - b);
+
+    const vals = [];
 
     for (const addr of addrs)
     {
       const conf = currentSceneMap.inputRegisters[addr];
+      if (!conf?.path) continue;
+
       try
       {
         const resp = await mbClient.readInputRegisters(addr, 1);
@@ -250,16 +272,21 @@ async function ioToModbus()
 {
   if (!currentSceneMap) return;
 
-  // Zápis coils (digitálne vstupy PLC, teda povely zo simulátora)
+  // Zápis coils (digitálne vstupy PLC)
   if (currentSceneMap.outputCoils)
   {
-    const addrs = Object.keys(currentSceneMap.outputCoils).map(a => parseInt(a, 10)).sort((a,b) => a - b);
-    const vals  = [];
+    const addrs = Object.keys(currentSceneMap.outputCoils)
+      .map(a => parseInt(a, 10))
+      .sort((a,b) => a - b);
+
+    const vals = [];
 
     for (const addr of addrs)
     {
       const conf = currentSceneMap.outputCoils[addr];
-      const bit  = !!getByPath(IO, conf.path);
+      if (!conf?.path) continue;
+
+      const bit = !!getByPath(IO, conf.path);
 
       try
       {
@@ -282,12 +309,17 @@ async function ioToModbus()
   // Zápis holding registers (analógové výstupy PLC)
   if (currentSceneMap.outputRegisters)
   {
-    const addrs = Object.keys(currentSceneMap.outputRegisters).map(a => parseInt(a, 10)).sort((a,b) => a - b);
-    const vals  = [];
+    const addrs = Object.keys(currentSceneMap.outputRegisters)
+      .map(a => parseInt(a, 10))
+      .sort((a,b) => a - b);
+
+    const vals = [];
 
     for (const addr of addrs)
     {
       const conf = currentSceneMap.outputRegisters[addr];
+      if (!conf?.path) continue;
+
       const scaled = Math.round((getByPath(IO, conf.path) || 0) * (conf.scale || 1));
 
       try
@@ -312,15 +344,14 @@ async function ioToModbus()
 /* =========================
    HLAVNÝ TICK
    ========================= */
-// každých TICK_MS ms sa vykoná cyklus čítania a zápisu
 setInterval(async () =>
 {
   try
   {
-    await modbusToIo();   // načítanie hodnôt z PLC
-    await ioToModbus();   // zápis hodnôt do PLC
+    await modbusToIo();
+    await ioToModbus();
 
-    // ak je pripojený prehliadač, pošleme mu aktuálny stav IO
+    // pošli browseru aktuálny stav
     if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN)
     {
       lastBrowserClient.send(JSON.stringify({ type: "sync", IO }));
