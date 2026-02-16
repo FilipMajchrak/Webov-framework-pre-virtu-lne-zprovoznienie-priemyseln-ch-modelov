@@ -1,0 +1,68 @@
+.simulator-layout
+{
+  height: calc(100vh - 56px); /* 56px = výška navbaru, uprav podľa skutočnej výšky */
+  overflow: hidden;
+}
+
+.simulator-layout .split-container
+{
+  display: flex;
+  height: 100%;
+}
+
+.simulator-layout .toolbox
+{
+  width: 20%;
+  background: #1e1e1e;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.simulator-layout .main-panel
+{
+  flex: 1;
+  position: relative;
+}
+
+.simulator-layout #three-container
+{
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.io-table-wrapper table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.io-table-wrapper th, .io-table-wrapper td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#io-table input[type="number"] {
+  text-align: center;         /* zarovnaj číslo na stred */
+  padding: 0.25rem 0.5rem;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+#io-table td {
+  vertical-align: middle;
+}
