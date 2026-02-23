@@ -11,6 +11,7 @@
   <link href="style/style.css" rel="stylesheet">
   <link href="style/HMI.css" rel="stylesheet">
   <link href="style/simulator.css" rel="stylesheet">
+  <link rel="stylesheet" href="style/settings.css">
 
   <!-- THREE.js (verzia r124 - kompatibilná s Physijs) -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/build/three.min.js"></script>
@@ -33,6 +34,7 @@
   <script src="sim_scripts/action_objects/piston.js"></script>
   <script src="sim_scripts/action_objects/distance_sensor.js"></script>
   <script src="sim_scripts/debugtool.js"></script>
+  <script src="scripts/settings_managers.js"></script>
   <!--<script src="PLC.js"></script>-->
 
 </head>
@@ -75,6 +77,17 @@
 
   <!-- Načítanie hlavnej scény po načítaní DOM -->
   <script src="sim_scripts/threeScene.js"></script>
-  <script src="sim_scripts/IOpanel.js"></script
+  <script src="sim_scripts/IOpanel.js"></script>
 </body>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      await window.Settings.load();     // natiahne /api/config a aplikuje theme
+    } catch (e) {
+      console.warn("[Settings] load failed, fallback to default:", e);
+      window.Settings.applyTheme();     // aspoň nastaví dark/light podľa defaultu
+    }
+  });
+</script>
 </html>

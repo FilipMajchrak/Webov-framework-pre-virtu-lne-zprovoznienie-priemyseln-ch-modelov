@@ -1,0 +1,13 @@
+{
+  "theme": "dark",
+  "modbus": {
+    "host": "192.168.0.10",
+    "port": 502,
+    "unitId": 1,
+    "tickMs": 100
+  },
+  "debug": {
+    "hitbox": false,
+    "stats": true
+  }
+}

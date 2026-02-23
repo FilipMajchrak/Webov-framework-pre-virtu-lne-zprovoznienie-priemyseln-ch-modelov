@@ -359,3 +359,50 @@ setInterval(async () =>
     console.error("Tick error:", e.message);
   }
 }, TICK_MS);
+
+/* =========================
+   SETTINGS API (user_config.json)
+   ========================= */
+
+const fs = require("fs");
+
+// JSON parser pre POST
+app.use(express.json());
+
+const CONFIG_PATH = path.join(root, "user_config.json");
+
+// GET config
+app.get("/api/config", (req, res) => {
+  try {
+    if (!fs.existsSync(CONFIG_PATH)) {
+      const defaultConfig = { theme: "dark" };
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2));
+      return res.json(defaultConfig);
+    }
+
+    const raw = fs.readFileSync(CONFIG_PATH, "utf8");
+    const data = JSON.parse(raw);
+    return res.json(data);
+
+  } catch (e) {
+    console.error("GET /api/config error:", e.message);
+    return res.status(500).json({ error: "Failed to read config" });
+  }
+});
+
+// POST config
+app.post("/api/config", (req, res) => {
+  try {
+    const cfg = req.body || {};
+
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), "utf8");
+
+    console.log("[CONFIG] Uložený user_config.json:", cfg);
+
+    return res.json({ success: true });
+
+  } catch (e) {
+    console.error("POST /api/config error:", e.message);
+    return res.status(500).json({ error: "Failed to save config" });
+  }
+});

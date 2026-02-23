@@ -12,9 +12,10 @@
   <link rel="stylesheet" href="style/style.css">
   <link rel="stylesheet" href="style/simulator.css">
   <link rel="stylesheet" href="style/HMI.css">
-
-  <!-- Nastavenia štýl -->
   <link rel="stylesheet" href="style/settings.css">
+
+  
+  <script src="scripts/settings_managers.js"></script>
 </head>
 
 <body class="settings-page">
@@ -152,6 +153,47 @@
     }
 
     menuBtns.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+
+    document.addEventListener("DOMContentLoaded", async () => {
+
+    if (!window.Settings) {
+        console.error("SettingsManager nie je načítaný!");
+        return;
+    }
+
+    // načítaj config zo servera
+    await Settings.load();
+
+    const themeSelect = document.getElementById("sim-theme");
+    const btnSave = document.getElementById("btn-save");
+    const btnReset = document.getElementById("btn-reset");
+
+    // nastav select podľa aktuálneho configu
+    themeSelect.value = Settings.get().theme;
+
+    // keď sa zmení theme
+    themeSelect.addEventListener("change", () => {
+        const newTheme = themeSelect.value;
+        Settings.set("theme", newTheme);
+        console.log("Theme prepnutý na:", newTheme);
+    });
+
+    // uložiť
+    btnSave.addEventListener("click", async () => {
+        console.log("Ukladám config...");
+        await Settings.save();
+        console.log("Config uložený.");
+    });
+
+    // reset
+    btnReset.addEventListener("click", () => {
+        Settings.reset();
+        themeSelect.value = Settings.get().theme;
+        console.log("Reset na default.");
+    });
+
+    });
+
   </script>
 </body>
 </html>

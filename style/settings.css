@@ -1,6 +1,11 @@
-/* style/settings.css */
+/* =========================================================
+   SETTINGS PAGE (dark default) + LIGHT THEME overrides
+   ========================================================= */
 
-/* aby main panel nebol nalepený a mal príjemný layout */
+/* =========================
+   SETTINGS – layout
+   ========================= */
+
 .settings-page .main-panel .inner {
   height: 100%;
   display: flex;
@@ -8,64 +13,97 @@
   overflow: hidden;
 }
 
-/* “page” kontajner – vycentrovanie obsahu do stredu */
+/* page kontajner */
 .settings-page .settings-content {
   flex: 1;
   overflow: auto;
   display: flex;
-  justify-content: center;   /* horizontálne centrovanie */
-  align-items: flex-start;   /* hore, nie úplne stred (vyzerá lepšie) */
-  padding: 1.25rem;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0.9rem; /* kompakt */
 }
 
-/* karta/panel pre formulár – vyzerá ako v simulátore */
+/* karta/panel */
 .settings-page .settings-card {
   width: min(860px, 100%);
   background: #252526;
   border: 1px solid #333;
   border-radius: 12px;
-  padding: 1rem 1.25rem;
+  padding: 0.85rem 1rem; /* kompakt */
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
 
-/* hlavička stránky */
+/* header: oprav zarovnanie tlačidiel (baseline robilo bordel) */
 .settings-page .settings-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;        /* ✅ namiesto baseline */
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
 }
 
 .settings-page .settings-title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
 .settings-page .settings-subtitle {
-  margin: 0.25rem 0 0 0;
-  color: #9aa0a6;
-  font-size: 0.85rem;
+  margin: 0.15rem 0 0 0;
+  color: #b4b8be;             /* tmavý režim: čitateľnejšie než #9aa0a6 */
+  font-size: 0.82rem;
+}
+
+/* ak máš v headeri tlačidlá/linky */
+.settings-page .settings-header .btn,
+.settings-page .settings-header button.btn,
+.settings-page .settings-header a.btn {
+  display: inline-flex;       /* ✅ aby text + ikonka sedeli na stred */
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 /* sekcie */
 .settings-page .settings-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
   border-top: 1px solid #333;
 }
 
-.settings-page .settings-section h6 {
-  margin: 0 0 0.75rem 0;
-  color: #d4d4d4;
+.settings-page .settings-card > .settings-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
 }
 
-/* form controls, aby ladili s dark témou */
+.settings-page .settings-section h6 {
+  margin: 0 0 0.45rem 0;
+  color: #e0e0e0;             /* tmavý režim: lepší kontrast */
+  font-size: 0.95rem;
+}
+
+/* bootstrap grid spacing zmenšené */
+.settings-page .settings-card .row {
+  --bs-gutter-x: 0.75rem;
+  --bs-gutter-y: 0.5rem;
+}
+
+/* =========================
+   SETTINGS – form controls
+   ========================= */
+
+.settings-page .form-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #e0e0e0;             /* ✅ výraznejšie */
+}
+
 .settings-page .form-control,
 .settings-page .form-select {
   background: #1e1e1e;
   border: 1px solid #444;
-  color: #d4d4d4;
+  color: #dcdcdc;
 }
 
 .settings-page .form-control:focus,
@@ -76,17 +114,77 @@
   box-shadow: 0 0 0 .15rem rgba(0,255,0,0.12);
 }
 
-.settings-page .form-label {
-  color: #cfcfcf;
+/* menšie inputs */
+.settings-page .form-control.form-control-sm,
+.settings-page .form-select.form-select-sm {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
-/* toolbox menu: nech vyzerá jednotnejšie */
+/* zjednoť margin-top utility v karte */
+.settings-page .settings-card .mt-1,
+.settings-page .settings-card .mt-2,
+.settings-page .settings-card .mt-3 {
+  margin-top: 0.4rem !important;
+}
+
+/* menší padding v boxoch v sekcii */
+.settings-page .settings-section .p-3 {
+  padding: 0.75rem !important;
+}
+
+/* =========================
+   TOOLBOX menu (ľavý panel)
+   ========================= */
+
 .settings-page .toolbox .list-group-item {
   background: transparent;
   color: #d4d4d4;
   border: 1px solid transparent;
   border-radius: 8px;
   margin-bottom: 6px;
+}
+
+/* ===== Settings header: zarovnanie textov a tlačidiel ===== */
+.settings-page .settings-header {
+  display: flex;
+  align-items: center;      
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.settings-page .settings-header .settings-title-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 44px;           /* ✅ aby výška sedela s btn */
+}
+
+.settings-page .settings-title {
+  margin: 0;
+  line-height: 1.1;
+  font-size: 1.05rem;
+}
+
+.settings-page .settings-subtitle {
+  margin: 0.15rem 0 0 0;
+  line-height: 1.15;
+  font-size: 0.82rem;
+  color: #b4b8be;             /* čitateľnejšie */
+}
+
+/* tlačidlá v headeri nech sú rovnaké výškou a zarovnané */
+.settings-page .settings-header .btn,
+.settings-page .settings-header button.btn,
+.settings-page .settings-header a.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  min-height: 38px;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
 }
 
 .settings-page .toolbox .list-group-item:hover {
@@ -100,7 +198,7 @@
   color: #ffffff;
 }
 
-/* malé “sticky” tlačidlá dole v toolboxe, nech sú stále po ruke */
+/* sticky actions dole – + oprava zarovnania tlačidiel */
 .settings-page .toolbox .actions {
   position: sticky;
   bottom: 0;
@@ -108,94 +206,26 @@
   background: linear-gradient(to top, rgba(30,30,30,1), rgba(30,30,30,0));
 }
 
+
+.settings-page .toolbox .actions .btn,
+.settings-page .toolbox .actions button.btn,
+.settings-page .toolbox .actions a.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
 /* =========================
-   SETTINGS – compact layout
+   DEBUG box
    ========================= */
 
-/* karta: menej paddingu */
-.settings-page .settings-card {
-  width: min(860px, 100%);
-  background: #252526;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 0.85rem 1rem;              /* bolo väčšie */
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-}
-
-/* header: menej vzduchu */
-.settings-page .settings-header {
-  margin-bottom: 0.35rem;
-}
-.settings-page .settings-title {
-  font-size: 1.05rem;
-}
-.settings-page .settings-subtitle {
-  margin-top: 0.15rem;
-  font-size: 0.82rem;
-}
-
-/* sekcie: zníž “oddeľovanie” */
-.settings-page .settings-section {
-  margin-top: 0.65rem;               /* bolo 1rem */
-  padding-top: 0.65rem;              /* bolo 1rem */
-  border-top: 1px solid #333;
-}
-.settings-page .settings-section h6 {
-  margin: 0 0 0.45rem 0;             /* bolo 0.75rem */
-  font-size: 0.95rem;
-}
-
-/* Bootstrap grid spacing je veľký -> zmenšíme */
-.settings-page .settings-card .row {
-  --bs-gutter-x: 0.75rem;            /* default ~1.5rem */
-  --bs-gutter-y: 0.5rem;             /* default ~0.75rem */
-}
-
-/* Labels kompaktnejšie */
-.settings-page .form-label {
-  margin-bottom: 0.25rem;
-  font-size: 0.85rem;
-  color: #cfcfcf;
-}
-
-/* Inputs trošku nižšie */
-.settings-page .form-control.form-control-sm,
-.settings-page .form-select.form-select-sm {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-}
-
-/* zruš extra “mt-1/mt-2/mt-3” v kartách (bootstrap) – nech je to jednotné */
-.settings-page .settings-card .mt-1,
-.settings-page .settings-card .mt-2,
-.settings-page .settings-card .mt-3 {
-  margin-top: 0.4rem !important;
-}
-
-/* Debug box: menší padding */
-.settings-page .settings-section .p-3 {
-  padding: 0.75rem !important;
-}
-
-/* Hlavný wrapper: menší padding aby karta neplávala v prázdne */
-.settings-page .settings-content {
-  padding: 0.9rem;
-  align-items: flex-start;
-}
-
-.settings-page .settings-card > .settings-section:first-of-type {
-  border-top: none;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-/* Debug box */
 .debug-box {
   border: 1px solid #333;
   border-radius: 10px;
 }
 
-/* Každý debug riadok */
 .debug-item {
   display: flex;
   align-items: center;
@@ -203,16 +233,171 @@
   margin-bottom: 8px;
 }
 
-/* Checkbox */
 .debug-item input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
 }
 
-/* Label */
 .debug-item label {
-  color: #d4d4d4;
+  color: #e0e0e0; 
   cursor: pointer;
   margin: 0;
+}
+
+/* =====================================================
+   GLOBAL LIGHT THEME
+   platí pre settings aj simulator
+   ===================================================== */
+
+body.theme-light {
+  background-color: #f3f3f3 !important;
+  color: #111 !important;
+}
+
+/* Layout panely */
+body.theme-light .simulator-layout,
+body.theme-light .split-container,
+body.theme-light .toolbox,
+body.theme-light .main-panel,
+body.theme-light .right-panel {
+  background-color: #f3f3f3 !important;
+  color: #111 !important;
+}
+
+/* Karty / vnútorné boxy */
+body.theme-light .inner,
+body.theme-light .settings-card {
+  background: #ffffff !important;
+  border-color: #ddd !important;
+  color: #111 !important;
+}
+
+body.theme-light label,
+body.theme-light .form-label,
+body.theme-light .small,
+body.theme-light .text-secondary,
+body.theme-light .text-muted {
+  color: #222 !important;   /* bolo #333, dávam ešte o kus tmavšie */
+  opacity: 1 !important;
+}
+
+body.theme-light .settings-subtitle {
+  color: #333 !important;
+}
+
+/* placeholder */
+body.theme-light input::placeholder,
+body.theme-light textarea::placeholder {
+  color: #666 !important;
+  opacity: 1 !important;
+}
+
+/* Inputs */
+body.theme-light .form-control,
+body.theme-light .form-select {
+  background: #ffffff !important;
+  color: #111 !important;
+  border-color: #ccc !important;
+}
+
+body.theme-light .form-control:focus,
+body.theme-light .form-select:focus {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15) !important;
+}
+
+/* Navbar override */
+body.theme-light .navbar.bg-dark {
+  background: #ffffff !important;
+  border-bottom: 1px solid #ddd;
+}
+
+body.theme-light .navbar.navbar-dark .navbar-brand,
+body.theme-light .navbar.navbar-dark .nav-link {
+  color: #111 !important;
+}
+
+body.theme-light .navbar .nav-link.active {
+  font-weight: 600;
+}
+
+/* remove text-light hard override */
+body.theme-light .text-light {
+  color: #111 !important;
+}
+
+/* Buttons */
+body.theme-light .btn,
+body.theme-light button.btn {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+body.theme-light .btn:focus,
+body.theme-light .btn:active {
+  box-shadow: none !important;
+}
+
+/* Outline-light v light režime */
+body.theme-light .btn-outline-light {
+  color: #111 !important;
+  border-color: #bbb !important;
+  background: #fff !important;
+}
+
+body.theme-light .btn-outline-light:hover {
+  background: #f0f0f0 !important;
+}
+
+/* Success button */
+body.theme-light .btn-success {
+  background: #198754 !important;
+  border-color: #198754 !important;
+}
+
+/* List menu */
+body.theme-light .list-group-item {
+  background: #ffffff !important;
+  color: #111 !important;
+  border-color: #ddd !important;
+}
+
+body.theme-light .list-group-item:hover {
+  background: #f5f5f5 !important;
+}
+
+body.theme-light .list-group-item.active {
+  background: #e9f2ff !important;
+  color: #111 !important;
+  border-color: #cfe3ff !important;
+}
+
+/* table-dark override */
+body.theme-light table.table-dark {
+  --bs-table-bg: #ffffff;
+  --bs-table-striped-bg: #f6f6f6;
+  --bs-table-striped-color: #111;
+  --bs-table-color: #111;
+  --bs-table-border-color: #ddd;
+}
+
+body.theme-light table.table-dark thead th {
+  background: #f1f1f1 !important;
+  color: #111 !important;
+}
+
+/* scrollbar */
+body.theme-light ::-webkit-scrollbar-thumb {
+  background: #bbb;
+}
+
+body.theme-light ::-webkit-scrollbar-track {
+  background: #f3f3f3;
+}
+
+body.theme-light .settings-page .toolbox .list-group-item,
+body.theme-light .settings-page .toolbox .list-group-item * {
+  opacity: 1 !important;
 }
