@@ -81,7 +81,6 @@ const server = app.listen(HTTP_PORT, () =>
 const wss = new WebSocketServer({ server });
 console.log("WS server pripojený k Expressu.");
 
-// ✅ Dôležité: držíme inputs/outputs ako objekty
 let IO = { inputs: {}, outputs: {} };
 let lastBrowserClient = null;
 let currentSceneMap = null;
@@ -100,7 +99,6 @@ wss.on("connection", (ws) =>
     {
       const data = JSON.parse(msg.toString());
 
-      // ✅ Browser posiela iba outputs (inputs prichádzajú z Modbusu)
       if (data?.type === "io" && data.IO)
       {
         if (data.IO.outputs)
@@ -140,7 +138,6 @@ function getByPath(obj, path)
   return path.split(".").reduce((o, k) => (o ? o[k] : undefined), obj);
 }
 
-// ✅ OPRAVA: setByPath vytvorí chýbajúce časti cesty (inputs/outputs/...)
 function setByPath(obj, path, value)
 {
   const keys = path.split(".");
@@ -190,7 +187,7 @@ socket.on("close", () =>
 connectModbus();
 
 /* =========================
-   MODBUS ↔ IO FUNKCIE
+   MODBUS - IO FUNKCIE
    ========================= */
 async function modbusToIo()
 {

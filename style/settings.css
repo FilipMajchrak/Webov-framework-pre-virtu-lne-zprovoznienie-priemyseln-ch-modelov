@@ -1,0 +1,218 @@
+/* style/settings.css */
+
+/* aby main panel nebol nalepený a mal príjemný layout */
+.settings-page .main-panel .inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* “page” kontajner – vycentrovanie obsahu do stredu */
+.settings-page .settings-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;   /* horizontálne centrovanie */
+  align-items: flex-start;   /* hore, nie úplne stred (vyzerá lepšie) */
+  padding: 1.25rem;
+}
+
+/* karta/panel pre formulár – vyzerá ako v simulátore */
+.settings-page .settings-card {
+  width: min(860px, 100%);
+  background: #252526;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* hlavička stránky */
+.settings-page .settings-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-page .settings-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.settings-page .settings-subtitle {
+  margin: 0.25rem 0 0 0;
+  color: #9aa0a6;
+  font-size: 0.85rem;
+}
+
+/* sekcie */
+.settings-page .settings-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #333;
+}
+
+.settings-page .settings-section h6 {
+  margin: 0 0 0.75rem 0;
+  color: #d4d4d4;
+}
+
+/* form controls, aby ladili s dark témou */
+.settings-page .form-control,
+.settings-page .form-select {
+  background: #1e1e1e;
+  border: 1px solid #444;
+  color: #d4d4d4;
+}
+
+.settings-page .form-control:focus,
+.settings-page .form-select:focus {
+  background: #1e1e1e;
+  color: #ffffff;
+  border-color: #00ff00;
+  box-shadow: 0 0 0 .15rem rgba(0,255,0,0.12);
+}
+
+.settings-page .form-label {
+  color: #cfcfcf;
+}
+
+/* toolbox menu: nech vyzerá jednotnejšie */
+.settings-page .toolbox .list-group-item {
+  background: transparent;
+  color: #d4d4d4;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.settings-page .toolbox .list-group-item:hover {
+  border-color: #444;
+  background: rgba(255,255,255,0.03);
+}
+
+.settings-page .toolbox .list-group-item.active {
+  border-color: #00ff00;
+  background: rgba(0,255,0,0.08);
+  color: #ffffff;
+}
+
+/* malé “sticky” tlačidlá dole v toolboxe, nech sú stále po ruke */
+.settings-page .toolbox .actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.75rem;
+  background: linear-gradient(to top, rgba(30,30,30,1), rgba(30,30,30,0));
+}
+
+/* =========================
+   SETTINGS – compact layout
+   ========================= */
+
+/* karta: menej paddingu */
+.settings-page .settings-card {
+  width: min(860px, 100%);
+  background: #252526;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;              /* bolo väčšie */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* header: menej vzduchu */
+.settings-page .settings-header {
+  margin-bottom: 0.35rem;
+}
+.settings-page .settings-title {
+  font-size: 1.05rem;
+}
+.settings-page .settings-subtitle {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+
+/* sekcie: zníž “oddeľovanie” */
+.settings-page .settings-section {
+  margin-top: 0.65rem;               /* bolo 1rem */
+  padding-top: 0.65rem;              /* bolo 1rem */
+  border-top: 1px solid #333;
+}
+.settings-page .settings-section h6 {
+  margin: 0 0 0.45rem 0;             /* bolo 0.75rem */
+  font-size: 0.95rem;
+}
+
+/* Bootstrap grid spacing je veľký -> zmenšíme */
+.settings-page .settings-card .row {
+  --bs-gutter-x: 0.75rem;            /* default ~1.5rem */
+  --bs-gutter-y: 0.5rem;             /* default ~0.75rem */
+}
+
+/* Labels kompaktnejšie */
+.settings-page .form-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #cfcfcf;
+}
+
+/* Inputs trošku nižšie */
+.settings-page .form-control.form-control-sm,
+.settings-page .form-select.form-select-sm {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* zruš extra “mt-1/mt-2/mt-3” v kartách (bootstrap) – nech je to jednotné */
+.settings-page .settings-card .mt-1,
+.settings-page .settings-card .mt-2,
+.settings-page .settings-card .mt-3 {
+  margin-top: 0.4rem !important;
+}
+
+/* Debug box: menší padding */
+.settings-page .settings-section .p-3 {
+  padding: 0.75rem !important;
+}
+
+/* Hlavný wrapper: menší padding aby karta neplávala v prázdne */
+.settings-page .settings-content {
+  padding: 0.9rem;
+  align-items: flex-start;
+}
+
+.settings-page .settings-card > .settings-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Debug box */
+.debug-box {
+  border: 1px solid #333;
+  border-radius: 10px;
+}
+
+/* Každý debug riadok */
+.debug-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* Checkbox */
+.debug-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Label */
+.debug-item label {
+  color: #d4d4d4;
+  cursor: pointer;
+  margin: 0;
+}
