@@ -10,9 +10,10 @@
   height: 100%;
 }
 
-.simulator-layout .toolbox
-{
-  width: 20%;
+.simulator-layout .toolbox {
+  width: 260px;      
+  min-width: 220px; 
+  max-width: 300px;  
   background: #1e1e1e;
   color: #fff;
   display: flex;

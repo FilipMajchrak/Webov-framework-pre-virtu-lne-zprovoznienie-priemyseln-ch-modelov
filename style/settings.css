@@ -273,6 +273,35 @@ body.theme-light .settings-card {
   color: #111 !important;
 }
 
+/* toolbox: scroll len obsah, tlačidlá staticky dole */
+.settings-page .toolbox{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.settings-page .toolbox .inner{
+  flex: 1;
+  overflow-y: auto; 
+}
+
+.settings-page .list-group-item {
+  display: flex;
+  justify-content: center;  
+  align-items: center;      
+}
+
+.settings-page .toolbox .toolbox-footer{
+  padding-top: 0.5rem;
+  border-top: 1px solid #444;
+}
+
+.settings-page .toolbox .btn,
+.settings-page .toolbox .btn:focus,
+.settings-page .toolbox .btn:active{
+  box-shadow: none !important;
+}
+
 body.theme-light label,
 body.theme-light .form-label,
 body.theme-light .small,
