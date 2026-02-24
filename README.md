@@ -1,86 +1,108 @@
-# ST Simulátor -- Vizualizácia a Detekcia objektov v 3D priestore
+# ST Simulátor – Virtuálne sprevádzkovanie s napojením na SoftPLC
 
-Tento projekt predstavuje interaktívny 3D simulátor vytvorený pomocou
-knižnice [Three.js](https://threejs.org/) a fyzikálneho enginu
-[Physijs](https://github.com/chandlerprall/Physijs), s cieľom vizuálne
-demonštrovať pohyb objektov, senzory, dopravníky a detekciu pomocou
-kolíznych boxov a raycasting-u.
+ST Simulátor je desktopová aplikácia vytvorená ako súčasť bakalárskej práce.  
+Slúži na virtuálne sprevádzkovanie výrobnej linky pomocou externého SoftPLC, ktoré komunikuje so simuláciou cez Modbus TCP.
 
-------------------------------------------------------------------------
+Aplikácia je distribuovaná ako `.exe` súbor a obsahuje vlastný Node.js backend.
 
-## 🎯 Hlavné funkcie
+---
 
--   Simulácia dopravníkov a padania objektov\
--   Interaktívne detekčné zóny\
--   Senzory s raycastingom (lúčové senzory)\
--   Vizualizácia hitboxov, rayov, proxy boxov (debug tools)\
--   Ovládanie kamery cez myš a klávesnicu (WASD + myš)\
--   Stavové I/O pre vstupy a výstupy
+## Architektúra systému
 
-------------------------------------------------------------------------
+Systém pozostáva z troch hlavných častí:
 
-## 🖥️ Spustenie projektu (web verzia)
+### 1. 3D Simulátor
 
-> **Predpoklady:** - Spustenie prebieha cez webový prehliadač\
-> - Nepotrebujete backend -- ide o čisto front-end simuláciu
+- Three.js (r124)
+- Physijs (Ammo.js)
+- Fyzikálna simulácia objektov
+- Senzory (raycasting)
+- Detekčné zóny (Box3 kolízie)
+- Triedenie objektov podľa merania
+- Vizualizácia vstupov a výstupov
 
-1.  Otvor `simulator.html` v prehliadači\
-2.  Po načítaní klikni do scény a ovládaj kameru myšou a klávesami\
-3.  Senzory, dopravníky a interakcie sa riadia podľa `window.IO.inputs`
+Simulátor predstavuje digitálne dvojča riadeného procesu.
 
-------------------------------------------------------------------------
+---
 
-## ⚡ Spustenie EXE verzie (branch `experimental-exe`)
+### 2. Backend (Node.js)
 
-V branchi **`experimental-exe`** sa nachádza **zabalená aplikácia** vo
-forme spustiteľného súboru.
+- Express server
+- WebSocket komunikácia
+- Modbus TCP klient (jsmodbus)
+- Dynamické mapovanie I/O podľa načítanej scény
 
-👉 Postup:\
-1. Na GitHube si prepni branch na **`experimental-exe`**\
-2. Stiahni celý obsah projektu (`Code` → `Download ZIP`)\
-3. Rozbaľ archív\
-4. Spusti súbor **`simulator.exe`**
+Backend zabezpečuje:
 
-> Tento `.exe` súbor bol vytvorený pomocou **Node.js** a knižnice
-> **pkg**, ktorá zabalila celý projekt do jednej aplikácie.
+- Vytvorenie WebSocket spojenia s frontendom
+- Pripojenie na Modbus server (SoftPLC)
+- Synchronizáciu vstupov a výstupov medzi PLC a simuláciou
+- Prenos údajov v reálnom čase
 
-------------------------------------------------------------------------
+---
 
-## 🎮 Ovládanie
+### 3. SoftPLC
 
-  Akcia                         Klávesy / myš
-  ----------------------------- ------------------------------
-  Pohyb dopredu                 `W`
-  Pohyb dozadu                  `S`
-  Pohyb doľava                  `A`
-  Pohyb doprava                 `D`
-  Rotácia pohľadu               `Myš (držaná + pohyb)`
-  Ukončenie ovládania pohľadu   `ESC` (uvoľní myš)
-  Zapnutie hitboxov             `toggleHitbox()`
-  Zapnutie lúčov                `toggleRayVisuals()`
-  Aktivácia I/O tlačidiel       Tlačidlá v ľavom paneli HMI
-  Aktivácia vstupu              `window.IO.inputs` v konzole
+- Externý PLC simulátor
+- Riadiaca logika je implementovaná výhradne v PLC
+- Komunikácia cez Modbus TCP
 
-------------------------------------------------------------------------
+Simulátor nevykonáva riadiacu logiku – tú zabezpečuje SoftPLC.  
+Simulácia reaguje výlučne na hodnoty prijaté z PLC.
 
-## 🧪 Debugovacie nástroje
+---
 
--   **`showHitbox(...)`** -- zobrazenie kolízneho obalu objektu\
--   **`showDetectionBox(...)`** -- vizualizácia detekčnej zóny\
--   **`showRay(...)`** -- vizualizácia lúča pre raycast senzor\
--   **`toggleHitbox()` / `toggleRayVisuals()`** -- konzolové prepínače
+## Komunikačný tok
 
-------------------------------------------------------------------------
+SoftPLC  
+→ Modbus TCP  
+→ Node.js backend  
+→ WebSocket  
+→ 3D simulátor  
 
-## 📘 Poznámky pre ďalší vývoj
+Výstupy zo simulácie sú spätne odosielané do PLC cez backend.
 
--   Možnosť pridať animované stroje, ventily alebo manipulátory\
--   Import ďalších `.obj` modelov\
--   Prepojenie so skutočným PLC simulátorom alebo digitálnym dvojčaťom
+---
 
-------------------------------------------------------------------------
+## Spustenie aplikácie
 
-## 📄 Licencia
+### EXE verzia (hlavná forma použitia)
 
-Tento projekt je vytvorený ako súčasť bakalárskej práce a slúži na
-edukačné účely. Ďalšie použitie konzultujte s autorom.
+1. Spusti `simulator.exe`
+2. Backend sa automaticky inicializuje
+3. V sekcii Settings nastav IP adresu a port Modbus servera
+4. Spusti SoftPLC
+5. Po nadviazaní spojenia je simulácia riadená PLC
+
+---
+
+## Vývojová verzia (Node.js)
+
+Ak chceš projekt spustiť bez EXE:
+
+```bash
+npm install
+npm start
+```
+
+Aplikácia sa spustí lokálne cez Node.js server.
+
+---
+
+## Konfigurácia
+
+Nastavenia aplikácie (napr. IP adresa Modbus servera, port, ďalšie parametre) sa ukladajú do konfiguračného súboru a sú dostupné cez sekciu **Settings**.
+
+Mapovanie I/O je viazané na aktuálne načítanú scénu a prenáša sa medzi simulátorom a backendom pri inicializácii.
+
+---
+
+## Účel projektu
+
+Projekt bol vytvorený ako súčasť bakalárskej práce a slúži na demonštráciu:
+
+- Virtuálneho sprevádzkovania
+- Digitálneho dvojčaťa výrobného procesu
+- Prepojenia 3D simulácie s PLC systémom
+- Komunikácie cez Modbus TCP
+- Real-time synchronizácie dát medzi systémami
