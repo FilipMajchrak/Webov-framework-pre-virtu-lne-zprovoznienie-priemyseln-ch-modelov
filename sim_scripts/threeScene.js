@@ -51,6 +51,16 @@ function sendSceneToServer()
   console.log("[WS] Scene+map odoslané:", sceneName);
 }
 
+const getTheme = async () => {
+  try {
+    const r = await fetch("/api/config", { cache: "no-store" });
+    const cfg = await r.json();
+    return cfg?.theme || "dark";
+  } catch {
+    return "dark";
+  }
+};
+
 // ============================================
 // window.onload – inicializácia aplikácie
 // ============================================
@@ -71,7 +81,10 @@ window.onload = async function ()
 
   const renderer = new THREE.WebGLRenderer(); // Hlavný vykresľovací engine
   renderer.setSize(window.innerWidth, window.innerHeight); // Nastavenie veľkosti podľa okna
-  renderer.setClearColor(0x252526); // Tmavošedé pozadie
+
+  const theme = await getTheme();
+  renderer.setClearColor(theme === "light" ? 0xe6f0ff : 0x252526);
+
   document.getElementById('three-container').appendChild(renderer.domElement); // Pripoj renderer do DOM
 
   // ==========================
