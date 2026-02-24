@@ -1,9 +1,10 @@
 // sim_scripts/SettingsManager.js
 (function () {
+  // DEFAULT nastavenia 
   const DEFAULT_CONFIG = {
     theme: "dark",
     modbus: { host: "127.0.0.1", port: 1502, unitId: 1, tickMs: 500 },
-    debug: { hitbox: false, stats: false }
+    debug: { hitbox: false, stats: true }
   };
 
   function deepMerge(base, incoming) {
@@ -63,12 +64,10 @@
     }
 
     get() {
-      // vráť kópiu aby sa to neupravovalo mimo managera
       return structuredClone(this.config);
     }
 
     set(path, value) {
-      // path napr: "theme" alebo "modbus.host"
       const parts = String(path).split(".");
       let obj = this.config;
 
@@ -79,13 +78,25 @@
       }
       obj[parts[parts.length - 1]] = value;
 
-      // vždy sanitizuj (aby si mal typy a limity OK)
       this.config = sanitize(this.config);
-
-      // aplikačné efekty (zatiaľ len theme)
       this.applyTheme();
-
       this._emit();
+    }
+
+    // RESET do default (iba lokálne v UI)
+    reset() {
+      this.config = structuredClone(DEFAULT_CONFIG);
+      this.config = sanitize(this.config);
+      this.applyTheme();
+      this._emit();
+      return this.get();
+    }
+
+    //  RESET + uloženie na server (prepíše user_config.json cez tvoje POST /api/config)
+    async resetAndSave() {
+      this.reset();
+      await this.save();
+      return true;
     }
 
     applyTheme() {
@@ -100,7 +111,6 @@
       if (!res.ok) throw new Error(`GET /api/config failed: ${res.status}`);
       const data = await res.json();
 
-      // doplň defaulty + sanitize
       const merged = deepMerge(DEFAULT_CONFIG, data);
       this.config = sanitize(merged);
 
@@ -112,7 +122,6 @@
     }
 
     async save() {
-      // posielame už sanitizované dáta
       const payload = this.get();
 
       const res = await fetch("/api/config", {
@@ -126,6 +135,5 @@
     }
   }
 
-  // sprístupni globálne (jednoduché použitie bez bundlera)
   window.Settings = new SettingsManager();
 })();

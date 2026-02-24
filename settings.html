@@ -84,6 +84,13 @@
                     <input class="form-control form-control-sm" id="mb-ticks" type="number" value="500" min="10" step="10">
                   </div>
 
+                  <div class="d-flex justify-content-center mt-4">
+                    <div class="alert alert-warning text-center py-4 px-4" style="max-width: 900px; line-height: 1.6;">
+                      <div class="fw-bold mb-2">Upozornenie:</div>
+                      <p class="m-0">Pri zmene nastavení Modbus komunikácie môže dôjsť k automatickému odpojeniu spojenia alebo k nežiaducemu správaniu systému.</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
@@ -98,35 +105,14 @@
                     </select>
                   </div>
 
-                    <div class="col-12">
-                        <div class="p-3 debug-box">
-
-                            <h5 class="text-center mb-3 text-light">Debug</h5>
-
-                            <div class="debug-item">
-                            <input type="checkbox" id="dbg-hitbox">
-                            <label for="dbg-hitbox">Debug hitbox</label>
-                            </div>
-
-                            <div class="debug-item">
-                            <input type="checkbox" id="dbg-stats">
-                            <label for="dbg-stats">Debug stats</label>
-                            </div>
-
-                        </div>
-                    </div>
-
-                </div>
-                  
-
-                <div class="d-flex justify-content-center mt-4">
-                  <div class="alert alert-warning text-center py-4 px-4" style="max-width: 900px; line-height: 1.6;">
-                    <div class="fw-bold mb-2">Upozornenie:</div>
-                    <p class="m-0">Pri zmene nastavení Modbus komunikácie môže dôjsť k automatickému odpojeniu spojenia alebo k nežiaducemu správaniu systému.</p>
+                  <div class="debug-item">
+                  <input type="checkbox" id="dbg-stats">
+                  <label for="dbg-stats">Debug stats</label>
                   </div>
-                </div>
 
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -144,54 +130,96 @@
 
     function showSection(key) {
       Object.values(sections).forEach(s => s.classList.add('d-none'));
-      sections[key].classList.remove('d-none');
+      sections[key]?.classList.remove('d-none');
 
       menuBtns.forEach(b => b.classList.remove('active'));
       document.querySelector(`.list-group-item[data-section="${key}"]`)?.classList.add('active');
     }
 
-    menuBtns.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+    menuBtns.forEach(btn =>
+      btn.addEventListener('click', () => showSection(btn.dataset.section))
+    );
 
     document.addEventListener("DOMContentLoaded", async () => {
-
-    if (!window.Settings) {
+      if (!window.Settings) {
         console.error("SettingsManager nie je načítaný!");
         return;
-    }
+      }
 
-    // načítaj config zo servera
-    await Settings.load();
+      const themeSelect = document.getElementById("sim-theme");
+      const btnSave = document.getElementById("btn-save");
+      const btnReset = document.getElementById("btn-reset");
 
-    const themeSelect = document.getElementById("sim-theme");
-    const btnSave = document.getElementById("btn-save");
-    const btnReset = document.getElementById("btn-reset");
+      // helper: naplň UI z configu (SAFE)
+      function fillFormFromConfig(cfg) {
+        cfg = cfg || {};
+        cfg.modbus = cfg.modbus || {};
+        cfg.debug = cfg.debug || {};
 
-    // nastav select podľa aktuálneho configu
-    themeSelect.value = Settings.get().theme;
+        // Modbus
+        document.getElementById("mb-host").value  = cfg.modbus.host ?? "";
+        document.getElementById("mb-port").value  = cfg.modbus.port ?? 1502;
+        document.getElementById("mb-unit").value  = cfg.modbus.unitId ?? 1;
+        document.getElementById("mb-ticks").value = cfg.modbus.tickMs ?? 500;
 
-    // keď sa zmení theme
-    themeSelect.addEventListener("change", () => {
-        const newTheme = themeSelect.value;
-        Settings.set("theme", newTheme);
-        console.log("Theme prepnutý na:", newTheme);
+        // Theme + debug
+        themeSelect.value = cfg.theme ?? "dark";
+        document.getElementById("dbg-stats").checked = !!cfg.debug.stats;
+      }
+
+      // helper: zober hodnoty z formulára a nastav do Settings
+      function applyFormToSettings() {
+        Settings.set("modbus.host", document.getElementById("mb-host").value.trim());
+        Settings.set("modbus.port", Number(document.getElementById("mb-port").value));
+        Settings.set("modbus.unitId", Number(document.getElementById("mb-unit").value));
+        Settings.set("modbus.tickMs", Number(document.getElementById("mb-ticks").value));
+
+        Settings.set("debug.stats", !!document.getElementById("dbg-stats").checked);
+        Settings.set("theme", themeSelect.value);
+      }
+
+      // načítaj config zo servera
+      await Settings.load();
+
+      // nastav UI po load
+      fillFormFromConfig(Settings.get());
+
+      // keď sa zmení theme (iba lokálne do Settings, uloží sa až pri Save)
+      themeSelect.addEventListener("change", () => {
+        Settings.set("theme", themeSelect.value);
+        console.log("Theme prepnutý na:", themeSelect.value);
+      });
+
+      // uložiť
+      btnSave.addEventListener("click", async () => {
+        try {
+          applyFormToSettings();
+          console.log("Ukladám config...");
+          await Settings.save();
+          console.log("Config uložený.");
+        } catch (e) {
+          console.error("Save zlyhal:", e);
+        }
+      });
+
+      // reset + save (prepíše user_config.json na default)
+      btnReset.addEventListener("click", async () => {
+        try {
+          console.log("Resetujem na default...");
+          await Settings.resetAndSave();
+
+          // po resete naplň UI z aktuálneho Settings stavu
+          fillFormFromConfig(Settings.get());
+
+          console.log("Reset na default + uložené.");
+        } catch (e) {
+          console.error("ResetAndSave zlyhal:", e);
+        }
+      });
+
+      // defaultná sekcia
+      showSection("modbus");
     });
-
-    // uložiť
-    btnSave.addEventListener("click", async () => {
-        console.log("Ukladám config...");
-        await Settings.save();
-        console.log("Config uložený.");
-    });
-
-    // reset
-    btnReset.addEventListener("click", () => {
-        Settings.reset();
-        themeSelect.value = Settings.get().theme;
-        console.log("Reset na default.");
-    });
-
-    });
-
   </script>
 </body>
 </html>
