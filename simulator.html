@@ -35,6 +35,7 @@
   <script src="sim_scripts/action_objects/distance_sensor.js"></script>
   <script src="sim_scripts/debugtool.js"></script>
   <script src="scripts/settings_managers.js"></script>
+  
   <!--<script src="PLC.js"></script>-->
 
 </head>
@@ -89,5 +90,63 @@
       window.Settings.applyTheme();     // aspoň nastaví dark/light podľa defaultu
     }
   });
+
+  let graphsWindow = null;
+  let shouldOpenGraphsOnFirstClick = false;
+
+  document.addEventListener("DOMContentLoaded", async () =>
+  {
+    if (!window.Settings)
+    {
+      console.error("SettingsManager nie je načítaný!");
+      return;
+    }
+
+    try
+    {
+      await window.Settings.load();
+
+      const cfg = window.Settings.get() || {};
+      const debug = cfg.debug || {};
+
+      console.log("Načítaný config:", cfg);
+      console.log("debug.stats =", debug.stats);
+
+      shouldOpenGraphsOnFirstClick = !!debug.stats;
+    }
+    catch (e)
+    {
+      console.warn("[Settings] load failed:", e);
+
+      if (window.Settings.applyTheme)
+      {
+        window.Settings.applyTheme();
+      }
+    }
+  });
+
+  document.addEventListener("click", () =>
+  {
+    if (shouldOpenGraphsOnFirstClick)
+    {
+      if (!window.graphWindow || window.graphWindow.closed)
+      {
+        window.graphWindow = window.open(
+          "graph.html",
+          "graphsWindow",
+          "width=900,height=600"
+        );
+
+        if (!window.graphWindow)
+        {
+          console.warn("Prehliadač zablokoval otvorenie graph.html aj po kliknutí.");
+          return;
+        }
+      }
+
+      shouldOpenGraphsOnFirstClick = false;
+    }
+  });
+
 </script>
 </html>

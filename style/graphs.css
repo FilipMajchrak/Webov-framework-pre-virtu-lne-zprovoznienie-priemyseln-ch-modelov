@@ -1,0 +1,11 @@
+.graph-container
+{
+  height: 260px;
+  position: relative;
+}
+
+.graph-card
+{
+  padding: 12px;
+  border-radius: 6px;
+}

@@ -118,6 +118,10 @@ window.onload = async function ()
   // ==========================
   // Hlavný animačný cyklus
   // ==========================
+  let fps = 0;
+  let frameCount = 0;
+  let lastFpsTime = performance.now();
+
   function animate()
   {
     requestAnimationFrame(animate);       // Rekurzívne volanie animácie každé frame (~60 fps)
@@ -142,6 +146,39 @@ window.onload = async function ()
     if (typeof renderIOTable === 'function') 
     {
       renderIOTable();
+    }
+
+    frameCount++;
+
+    const now = performance.now();
+
+    if (now - lastFpsTime >= 1000)
+    {
+      fps = frameCount;
+      frameCount = 0;
+      lastFpsTime = now;
+
+      if (window.DebugStats)
+      {
+        window.DebugStats.fps = fps;
+      }
+
+      if (window.graphWindow && !window.graphWindow.closed)
+      {
+        window.graphWindow.postMessage({
+          type: "fps",
+          value: fps,
+          time: new Date().toLocaleTimeString()
+        }, "*");
+
+        console.log("[FPS] posielam do graph okna:", fps);
+      }
+      else
+      {
+        console.log("[FPS] graphWindow neexistuje alebo je zatvorené");
+      }
+
+      console.log("FPS:", fps);
     }
   }
 
