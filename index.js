@@ -32,7 +32,8 @@ const os = require("os");
 const net = require("net");
 const fs = require("fs");
 
-try {
+try 
+{
   require("dotenv").config();
 } catch {}
 
@@ -50,6 +51,14 @@ let MB_PORT     = parseInt(process.env.MB_PORT || "1502", 10);
 let MB_UNIT_ID  = parseInt(process.env.MB_UNIT || "1", 10);
 let TICK_MS     = parseInt(process.env.TICK_MS || "500", 10);
 
+let modbusStats = {
+  lastMs: 0,
+  minMs: Infinity,
+  maxMs: 0,
+  avgMs: 0,
+  count: 0,
+  sumMs: 0
+};
 
 /* =========================
    EXPRESS SERVER
@@ -75,7 +84,7 @@ function readUserConfigSafe() {
 function applyRuntimeConfig(cfg) {
   if (!cfg || typeof cfg !== "object") return;
 
-  // očakávame štruktúru ako vo vašom user_config.json:
+  // očakávame štruktúru ako vo user_config.json:
   // { modbus: { host, port, unitId, tickMs }, ... }
 
   if (cfg.modbus && typeof cfg.modbus === "object") 
@@ -250,6 +259,16 @@ function restartModbus() {
   connectModbus();
 }
 
+function recordModbusLatency(ms)
+{
+  modbusStats.lastMs = ms;
+  modbusStats.minMs = Math.min(modbusStats.minMs, ms);
+  modbusStats.maxMs = Math.max(modbusStats.maxMs, ms);
+  modbusStats.count += 1;
+  modbusStats.sumMs += ms;
+  modbusStats.avgMs = modbusStats.sumMs / modbusStats.count;
+}
+
 connectModbus();
 
 /* =========================
@@ -276,7 +295,10 @@ async function modbusToIo()
 
       try
       {
+        const start = performance.now();
         const resp = await mbClient.readDiscreteInputs(addr, 1);
+        const elapsed = performance.now() - start;
+        recordModbusLatency(elapsed);
         const bit  = resp?.response?._body?._valuesAsArray?.[0] ? 1 : 0;
 
         setByPath(IO, conf.path, !!bit);
@@ -295,7 +317,7 @@ async function modbusToIo()
     }
   }
 
-  // Čítanie input registers (analógové vstupy PLC)
+  // Čítanie input registers (číselné vstupy PLC)
   if (currentSceneMap.inputRegisters)
   {
     const addrs = Object.keys(currentSceneMap.inputRegisters)
@@ -311,7 +333,10 @@ async function modbusToIo()
 
       try
       {
+        const start = performance.now();
         const resp = await mbClient.readInputRegisters(addr, 1);
+        const elapsed = performance.now() - start;
+        recordModbusLatency(elapsed);
         const raw  = resp?.response?._body?.valuesAsArray?.[0] ?? 0;
         const val  = raw / (conf.scale || 1);
 
@@ -355,7 +380,10 @@ async function ioToModbus()
 
       try
       {
+        const start = performance.now();
         await mbClient.writeSingleCoil(addr, bit);
+        const elapsed = performance.now() - start;
+        recordModbusLatency(elapsed);
         vals.push(bit ? 1 : 0);
       }
       catch (e)
@@ -389,7 +417,10 @@ async function ioToModbus()
 
       try
       {
+        const start = performance.now();
         await mbClient.writeSingleRegister(addr, scaled);
+        const elapsed = performance.now() - start;
+        recordModbusLatency(elapsed);
         vals.push(scaled);
       }
       catch (e)
@@ -412,18 +443,32 @@ async function ioToModbus()
 
 let tickTimer = null;
 
-function startTick() {
+function startTick() 
+{
   if (tickTimer) clearInterval(tickTimer);
 
   tickTimer = setInterval(async () => {
-    try {
+    try 
+    {
       await modbusToIo();
       await ioToModbus();
 
-      if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) {
-        lastBrowserClient.send(JSON.stringify({ type: "sync", IO }));
+      if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) 
+      {
+        lastBrowserClient.send(JSON.stringify({
+          type: "sync",
+          IO,
+          stats: {
+            modbusLastMs: Number(modbusStats.lastMs.toFixed(2)),
+            modbusMinMs: modbusStats.minMs === Infinity ? 0 : Number(modbusStats.minMs.toFixed(2)),
+            modbusMaxMs: Number(modbusStats.maxMs.toFixed(2)),
+            modbusAvgMs: Number(modbusStats.avgMs.toFixed(2))
+          }
+        }));
       }
-    } catch (e) {
+    }
+    catch (e)
+    {
       console.error("Tick error:", e.message);
     }
   }, TICK_MS);
@@ -442,11 +487,14 @@ app.use(express.json());
 
 // GET config
 app.get("/api/config", (req, res) => {
-  try {
-    if (!fs.existsSync(CONFIG_PATH)) {
+  try 
+  {
+    if (!fs.existsSync(CONFIG_PATH)) 
+    {
       const defaultConfig = {
         theme: "dark",
-        modbus: {
+        modbus: 
+        {
           host: MB_HOST,
           port: MB_PORT,
           unitId: MB_UNIT_ID,
@@ -461,7 +509,9 @@ app.get("/api/config", (req, res) => {
     const data = JSON.parse(raw);
     return res.json(data);
 
-  } catch (e) {
+  } 
+  catch (e) 
+  {
     console.error("GET /api/config error:", e.message);
     return res.status(500).json({ error: "Failed to read config" });
   }
@@ -469,7 +519,8 @@ app.get("/api/config", (req, res) => {
 
 // POST config
 app.post("/api/config", (req, res) => {
-  try {
+  try 
+  {
     const before = readUserConfigSafe() || {};
     const cfg = req.body || {};
 
@@ -494,7 +545,9 @@ app.post("/api/config", (req, res) => {
     if (tickChanged) startTick();
 
     return res.json({ success: true, mbChanged, tickChanged });
-  } catch (e) {
+  } 
+  catch (e) 
+  {
     console.error("POST /api/config error:", e.message);
     return res.status(500).json({ error: "Failed to save config" });
   }

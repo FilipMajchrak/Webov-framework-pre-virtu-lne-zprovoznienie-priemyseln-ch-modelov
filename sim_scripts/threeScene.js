@@ -24,7 +24,22 @@ window.ws.onmessage = (event) =>
       window.IO.inputs  = { ...window.IO.inputs,  ...data.IO.inputs };
       window.IO.outputs = { ...window.IO.outputs, ...data.IO.outputs };
 
-      //console.log("[WS] Sync IO prijaté:", window.IO);
+      // ===== MODBUS ODOZVA DO GRAFU =====
+      if (
+        data.stats &&
+        typeof data.stats.modbusLastMs === "number" &&
+        window.graphWindow &&
+        !window.graphWindow.closed
+      )
+      {
+        window.graphWindow.postMessage({
+          type: "modbus",
+          value: data.stats.modbusLastMs,
+          time: new Date().toLocaleTimeString()
+        }, "*");
+
+        //console.log("[MODBUS] posielam do graph okna:", data.stats.modbusLastMs);
+      }
     }
   } 
   catch (e) 
@@ -171,14 +186,14 @@ window.onload = async function ()
           time: new Date().toLocaleTimeString()
         }, "*");
 
-        console.log("[FPS] posielam do graph okna:", fps);
+        //console.log("[FPS] posielam do graph okna:", fps);
       }
       else
       {
         console.log("[FPS] graphWindow neexistuje alebo je zatvorené");
       }
 
-      console.log("FPS:", fps);
+      //console.log("FPS:", fps);
     }
   }
 
