@@ -24,6 +24,16 @@ window.ws.onmessage = (event) =>
       window.IO.inputs  = { ...window.IO.inputs,  ...data.IO.inputs };
       window.IO.outputs = { ...window.IO.outputs, ...data.IO.outputs };
 
+      // ===== DIGITÁLNE IO DO GRAFU =====
+      if (window.graphWindow && !window.graphWindow.closed)
+      {
+        window.graphWindow.postMessage({
+          type: "DataIOScene",
+          IO: window.IO,
+          time: new Date().toLocaleTimeString()
+        }, "*");
+      }
+
       // ===== MODBUS ODOZVA DO GRAFU =====
       if (
         data.stats &&
@@ -37,7 +47,7 @@ window.ws.onmessage = (event) =>
           value: data.stats.modbusLastMs,
           time: new Date().toLocaleTimeString()
         }, "*");
-
+        sendSceneMapToGraphWindow();
         //console.log("[MODBUS] posielam do graph okna:", data.stats.modbusLastMs);
       }
     }
@@ -57,13 +67,22 @@ function sendSceneToServer()
   const sceneName = scene.constructor.name;
   const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
 
-  window.ws.send(JSON.stringify({
-    type: "scene",
-    name: sceneName,
-    map: modbusMap
-  }));
+  window.ws.send(JSON.stringify({type: "scene",name: sceneName,map: modbusMap}));
 
   console.log("[WS] Scene+map odoslané:", sceneName);
+}
+
+function sendSceneMapToGraphWindow()
+{
+  if (!window.graphWindow || window.graphWindow.closed) return;
+  if (!window.sceneManager?.currentScene) return;
+
+  const scene = window.sceneManager.currentScene;
+  const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
+
+  window.graphWindow.postMessage({type: "sceneMap",map: modbusMap}, "*");
+
+  console.log("[GRAPH] sceneMap odoslaná do graph okna");
 }
 
 const getTheme = async () => {
@@ -112,11 +131,12 @@ window.onload = async function ()
   // ==========================
   window.sceneManager = new SceneManager(renderer, camera);
 
-  // tu si vytvoríš scénu (momentálne Scene1, ale môžeš vymeniť za Scene2 atď.)
+  // tu vytvoríš scénu
   const scene = new Scene1(camera);
   await window.sceneManager.loadScene(scene);
 
   sendSceneToServer();
+  sendSceneMapToGraphWindow();
 
   // pošleme na server info o scéne až keď sa otvorí WebSocket (viď onopen vyššie)
 
@@ -188,11 +208,12 @@ window.onload = async function ()
 
         //console.log("[FPS] posielam do graph okna:", fps);
       }
+      /*
       else
       {
         console.log("[FPS] graphWindow neexistuje alebo je zatvorené");
       }
-
+      */
       //console.log("FPS:", fps);
     }
   }
