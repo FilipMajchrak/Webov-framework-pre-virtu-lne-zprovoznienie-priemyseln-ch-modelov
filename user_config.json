@@ -1,5 +1,5 @@
 {
-  "theme": "dark",
+  "theme": "light",
   "modbus": {
     "host": "127.0.0.1",
     "port": 1502,

@@ -1,3 +1,48 @@
+function isLightTheme()
+{
+    return document.body.classList.contains("theme-light");
+}
+
+function getChartTextColor()
+{
+    if (isLightTheme())
+    {
+        return "#111111";
+    }
+
+    return "#ffffff";
+}
+
+function getChartGridColorLight()
+{
+    if (isLightTheme())
+    {
+        return "rgba(0,0,0,0.08)";
+    }
+
+    return "rgba(255,255,255,0.08)";
+}
+
+function getChartGridColorStrong()
+{
+    if (isLightTheme())
+    {
+        return "rgba(0,0,0,0.15)";
+    }
+
+    return "rgba(255,255,255,0.15)";
+}
+
+function getChartBorderColor()
+{
+    if (isLightTheme())
+    {
+        return "rgba(0,0,0,0.25)";
+    }
+
+    return "rgba(255,255,255,0.25)";
+}
+
 function getByPath(obj, path)
 {
     return path.split(".").reduce((o, k) =>
@@ -89,6 +134,141 @@ function createBaseChart(canvasId, datasets, options = {})
         return null;
     }
 
+    const textColor = getChartTextColor();
+    const gridLight = getChartGridColorLight();
+    const gridStrong = getChartGridColorStrong();
+    const borderColor = getChartBorderColor();
+
+    const mergedPlugins =
+    {
+        title:
+        {
+            display: false,
+            color: textColor,
+            font:
+            {
+                size: 14,
+                weight: "bold"
+            }
+        },
+        legend:
+        {
+            display: true,
+            position: "bottom",
+            labels:
+            {
+                color: textColor,
+                boxWidth: 12,
+                padding: 12
+            }
+        },
+        ...options.plugins
+    };
+
+    if (options.plugins && options.plugins.title)
+    {
+        mergedPlugins.title =
+        {
+            color: textColor,
+            font:
+            {
+                size: 14,
+                weight: "bold"
+            },
+            ...options.plugins.title
+        };
+    }
+
+    if (options.plugins && options.plugins.legend)
+    {
+        mergedPlugins.legend =
+        {
+            display: true,
+            position: "bottom",
+            ...options.plugins.legend
+        };
+
+        if (options.plugins.legend.labels)
+        {
+            mergedPlugins.legend.labels =
+            {
+                color: textColor,
+                boxWidth: 12,
+                padding: 12,
+                ...options.plugins.legend.labels
+            };
+        }
+    }
+
+    const mergedX =
+    {
+        ticks:
+        {
+            color: textColor
+        },
+        grid:
+        {
+            color: gridLight
+        },
+        border:
+        {
+            color: borderColor
+        }
+    };
+
+    const mergedY =
+    {
+        ...options.y
+    };
+
+    if (options.y && options.y.ticks)
+    {
+        mergedY.ticks =
+        {
+            color: textColor,
+            ...options.y.ticks
+        };
+    }
+    else
+    {
+        mergedY.ticks =
+        {
+            color: textColor
+        };
+    }
+
+    if (options.y && options.y.grid)
+    {
+        mergedY.grid =
+        {
+            color: gridStrong,
+            ...options.y.grid
+        };
+    }
+    else
+    {
+        mergedY.grid =
+        {
+            color: gridStrong
+        };
+    }
+
+    if (options.y && options.y.border)
+    {
+        mergedY.border =
+        {
+            color: borderColor,
+            ...options.y.border
+        };
+    }
+    else
+    {
+        mergedY.border =
+        {
+            color: borderColor
+        };
+    }
+
     return new Chart(canvas.getContext("2d"),
     {
         type: "line",
@@ -102,45 +282,11 @@ function createBaseChart(canvasId, datasets, options = {})
             animation: false,
             responsive: true,
             maintainAspectRatio: false,
-            plugins:
-            {
-                legend:
-                {
-                    display: true,
-                    position: "top",
-                    labels:
-                    {
-                        color: "#fff",
-                        boxWidth: 12
-                    }
-                },
-                ...options.plugins
-            },
+            plugins: mergedPlugins,
             scales:
             {
-                x:
-                {
-                    ticks:
-                    {
-                        color: "#fff"
-                    },
-                    grid:
-                    {
-                        color: "rgba(255,255,255,0.08)"
-                    }
-                },
-                y:
-                {
-                    ticks:
-                    {
-                        color: "#fff"
-                    },
-                    grid:
-                    {
-                        color: "rgba(255,255,255,0.15)"
-                    },
-                    ...options.y
-                }
+                x: mergedX,
+                y: mergedY
             }
         }
     });
@@ -165,6 +311,11 @@ function createSteppedChart(canvasId, signalNames, title)
             {
                 display: true,
                 text: title
+            },
+            legend:
+            {
+                display: true,
+                position: "bottom"
             }
         },
         y:
@@ -174,7 +325,6 @@ function createSteppedChart(canvasId, signalNames, title)
             ticks:
             {
                 stepSize: 1,
-                color: "#fff",
                 callback(value)
                 {
                     if (value === 0)
@@ -212,6 +362,11 @@ function createAnalogChart(canvasId, signalNames, title)
             {
                 display: true,
                 text: title
+            },
+            legend:
+            {
+                display: true,
+                position: "bottom"
             }
         },
         y:
@@ -236,6 +391,13 @@ function createSingleValueChart(canvasId, label, color)
         }
     ],
     {
+        plugins:
+        {
+            legend:
+            {
+                display: false
+            }
+        },
         y:
         {
             beginAtZero: true
@@ -250,6 +412,45 @@ function destroyChart(chartName)
         window[chartName].destroy();
         window[chartName] = null;
     }
+}
+
+function cloneChartData(chart)
+{
+    if (!chart)
+    {
+        return null;
+    }
+
+    return {
+        labels: chart.data.labels.slice(),
+        datasets: chart.data.datasets.map((dataset) =>
+        {
+            return {
+                ...dataset,
+                data: dataset.data.slice()
+            };
+        })
+    };
+}
+
+function restoreChartData(chart, snapshot)
+{
+    if (!chart || !snapshot)
+    {
+        return;
+    }
+
+    chart.data.labels = snapshot.labels.slice();
+
+    chart.data.datasets.forEach((dataset, index) =>
+    {
+        if (snapshot.datasets[index])
+        {
+            dataset.data = snapshot.datasets[index].data.slice();
+        }
+    });
+
+    chart.update();
 }
 
 function recreateChartPair(config)
@@ -424,6 +625,34 @@ function initStaticCharts()
     }
 }
 
+function refreshChartsForTheme()
+{
+    const fpsSnapshot = cloneChartData(window.fpsChart);
+    const modbusSnapshot = cloneChartData(window.modbusChart);
+    const digitalInSnapshot = cloneChartData(window.digitalInChart);
+    const digitalOutSnapshot = cloneChartData(window.digitalOutChart);
+    const analogInSnapshot = cloneChartData(window.analogInChart);
+    const analogOutSnapshot = cloneChartData(window.analogOutChart);
+
+    initStaticCharts();
+    restoreChartData(window.fpsChart, fpsSnapshot);
+    restoreChartData(window.modbusChart, modbusSnapshot);
+
+    if (window.digitalInputPaths.length > 0 || window.digitalOutputPaths.length > 0)
+    {
+        recreateDigitalCharts(window.digitalInputPaths, window.digitalOutputPaths);
+        restoreChartData(window.digitalInChart, digitalInSnapshot);
+        restoreChartData(window.digitalOutChart, digitalOutSnapshot);
+    }
+
+    if (window.analogInputPaths.length > 0 || window.analogOutputPaths.length > 0)
+    {
+        recreateAnalogCharts(window.analogInputPaths, window.analogOutputPaths);
+        restoreChartData(window.analogInChart, analogInSnapshot);
+        restoreChartData(window.analogOutChart, analogOutSnapshot);
+    }
+}
+
 function handleSceneMap(map)
 {
     const digitalInputSignals = getSignalPaths(map.inputCoils);
@@ -526,6 +755,17 @@ window.addEventListener("load", () =>
 
     initStaticCharts();
     window.addEventListener("message", handleMessage);
+
+    const observer = new MutationObserver(() =>
+    {
+        refreshChartsForTheme();
+    });
+
+    observer.observe(document.body,
+    {
+        attributes: true,
+        attributeFilter: ["class"]
+    });
 
     console.log("Digital + Analog IN/OUT graph pripravený");
 });
