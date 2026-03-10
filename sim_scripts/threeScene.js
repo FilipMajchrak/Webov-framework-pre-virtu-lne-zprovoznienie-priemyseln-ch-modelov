@@ -35,21 +35,29 @@ window.ws.onmessage = (event) =>
       }
 
       // ===== MODBUS ODOZVA DO GRAFU =====
-      if (
-        data.stats &&
-        typeof data.stats.modbusLastMs === "number" &&
-        window.graphWindow &&
-        !window.graphWindow.closed
-      )
+      if (data.stats && typeof data.stats.modbusLastMs === "number" && window.graphWindow && !window.graphWindow.closed)
       {
         window.graphWindow.postMessage({
           type: "modbus",
           value: data.stats.modbusLastMs,
           time: new Date().toLocaleTimeString()
         }, "*");
+
         sendSceneMapToGraphWindow();
         //console.log("[MODBUS] posielam do graph okna:", data.stats.modbusLastMs);
       }
+    }
+    // ===== SYSTEM STATS DO GRAFU =====
+    if (data.type === "system" && data.stats && window.graphWindow && !window.graphWindow.closed)
+    {
+      window.graphWindow.postMessage({
+        type: "system",
+        stats: {
+          tickDurationMs: data.stats.tickDurationMs
+        },
+        time: new Date().toLocaleTimeString()
+      }, "*");
+      //console.log("[GRAPH] poslaný tick:", data.stats.tickDurationMs);
     }
   } 
   catch (e) 
@@ -82,7 +90,7 @@ function sendSceneMapToGraphWindow()
 
   window.graphWindow.postMessage({type: "sceneMap",map: modbusMap}, "*");
 
-  console.log("[GRAPH] sceneMap odoslaná do graph okna");
+  //console.log("[GRAPH] sceneMap odoslaná do graph okna");
 }
 
 const getTheme = async () => {
@@ -160,6 +168,7 @@ window.onload = async function ()
   function animate()
   {
     requestAnimationFrame(animate);       // Rekurzívne volanie animácie každé frame (~60 fps)
+    const frameStart = performance.now();
     controls.updateCameraPosition();      // Pohyb a rotácia kamery podľa vstupu
 
     const deltaTime = clock.getDelta();   // Čas medzi snímkami (v sekundách)
@@ -215,6 +224,16 @@ window.onload = async function ()
       }
       */
       //console.log("FPS:", fps);
+    }
+
+    const frameDuration = performance.now() - frameStart;
+    if (window.graphWindow && !window.graphWindow.closed)
+    {
+      window.graphWindow.postMessage({
+        type: "render",
+        value: frameDuration,
+        time: new Date().toLocaleTimeString()
+      }, "*");
     }
   }
 

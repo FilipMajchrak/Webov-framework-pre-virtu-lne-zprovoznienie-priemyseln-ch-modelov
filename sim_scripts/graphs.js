@@ -53,6 +53,8 @@ function getByPath(obj, path)
 
 window.fpsChart = null;
 window.modbusChart = null;
+window.tickChart = null;
+window.renderChart = null;
 
 window.digitalInChart = null;
 window.digitalOutChart = null;
@@ -376,7 +378,7 @@ function createAnalogChart(canvasId, signalNames, title)
     });
 }
 
-function createSingleValueChart(canvasId, label, color)
+function createSingleValueChart(canvasId, label, color, yOptions = {})
 {
     return createBaseChart(canvasId,
     [
@@ -400,7 +402,8 @@ function createSingleValueChart(canvasId, label, color)
         },
         y:
         {
-            beginAtZero: true
+            beginAtZero: true,
+            ...yOptions
         }
     });
 }
@@ -609,26 +612,20 @@ function initStaticCharts()
 {
     destroyChart("fpsChart");
     destroyChart("modbusChart");
+    destroyChart("tickChart");
+    destroyChart("renderChart");
 
     window.fpsChart = createSingleValueChart("fpsChart", "FPS", "lime");
-
-    if (window.fpsChart)
-    {
-        console.log("FPS graph pripravený");
-    }
-
     window.modbusChart = createSingleValueChart("modbusChart", "Modbus odozva [ms]", "orange");
-
-    if (window.modbusChart)
-    {
-        console.log("Modbus graph pripravený");
-    }
+    window.tickChart = createSingleValueChart("tickChart", "t[ms]", "red");
+    window.renderChart = createSingleValueChart("renderChart","Render time [ms]","cyan",{min:0,max:20});
 }
 
 function refreshChartsForTheme()
 {
     const fpsSnapshot = cloneChartData(window.fpsChart);
     const modbusSnapshot = cloneChartData(window.modbusChart);
+    const tickSnapshot = cloneChartData(window.tickChart);
     const digitalInSnapshot = cloneChartData(window.digitalInChart);
     const digitalOutSnapshot = cloneChartData(window.digitalOutChart);
     const analogInSnapshot = cloneChartData(window.analogInChart);
@@ -637,6 +634,7 @@ function refreshChartsForTheme()
     initStaticCharts();
     restoreChartData(window.fpsChart, fpsSnapshot);
     restoreChartData(window.modbusChart, modbusSnapshot);
+    restoreChartData(window.tickChart, tickSnapshot);
 
     if (window.digitalInputPaths.length > 0 || window.digitalOutputPaths.length > 0)
     {
@@ -705,6 +703,7 @@ function handleSceneIO(data)
 function handleMessage(event)
 {
     const data = event.data;
+    //console.log("GRAPH MESSAGE:", event.data);
 
     if (!data)
     {
@@ -741,6 +740,26 @@ function handleMessage(event)
     {
         handleSceneIO(data);
     }
+
+    if (data.type === "system")
+    {
+        pushSingleValue(
+            window.tickChart,
+            data.stats.tickDurationMs,
+            data.time ?? new Date().toLocaleTimeString()
+        );
+        return;
+    }
+
+    if (data.type === "render")
+    {
+        pushSingleValue(
+            window.renderChart,
+            data.value,
+            data.time ?? new Date().toLocaleTimeString()
+        );
+        return;
+    }
 }
 
 window.addEventListener("load", () =>
@@ -769,3 +788,4 @@ window.addEventListener("load", () =>
 
     console.log("Digital + Analog IN/OUT graph pripravený");
 });
+

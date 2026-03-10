@@ -4,7 +4,7 @@
     "host": "127.0.0.1",
     "port": 1502,
     "unitId": 1,
-    "tickMs": 500
+    "tickMs": 1000
   },
   "debug": {
     "hitbox": false,

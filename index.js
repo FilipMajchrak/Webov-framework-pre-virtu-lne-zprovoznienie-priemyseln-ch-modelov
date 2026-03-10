@@ -442,19 +442,29 @@ async function ioToModbus()
    ========================= */
 
 let tickTimer = null;
+let tickRunning = false;
 
 function startTick() 
 {
   if (tickTimer) clearInterval(tickTimer);
 
-  tickTimer = setInterval(async () => {
+  tickTimer = setInterval(async () =>
+  {
+    if (tickRunning) return;
+    tickRunning = true;
+
+    const tickStart = performance.now();
+
     try 
     {
       await modbusToIo();
       await ioToModbus();
 
+      const tickDurationMs = performance.now() - tickStart;
+
       if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) 
       {
+        // klasický sync
         lastBrowserClient.send(JSON.stringify({
           type: "sync",
           IO,
@@ -465,15 +475,27 @@ function startTick()
             modbusAvgMs: Number(modbusStats.avgMs.toFixed(2))
           }
         }));
+
+        // systémové štatistiky (ale už naše vlastné)
+        lastBrowserClient.send(JSON.stringify({
+          type: "system",
+          stats: {
+            tickDurationMs: Number(tickDurationMs.toFixed(2))
+          }
+        }));
+
+        console.log(`[TICK] trvanie: ${tickDuration.toFixed(2)} ms`);
       }
     }
     catch (e)
     {
       console.error("Tick error:", e.message);
     }
+    finally
+    {
+      tickRunning = false;
+    }
   }, TICK_MS);
-
-  console.log(`[TICK] ${TICK_MS} ms`);
 }
 
 startTick();
@@ -552,3 +574,5 @@ app.post("/api/config", (req, res) => {
     return res.status(500).json({ error: "Failed to save config" });
   }
 });
+
+
