@@ -1,39 +1,52 @@
-.simulator-layout
-{
-  height: calc(100vh - 56px); /* 56px = výška navbaru, uprav podľa skutočnej výšky */
+.simulator-layout {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.simulator-layout .split-container
-{
+.simulator-layout .split-container {
   display: flex;
   height: 100%;
+  min-height: 0;
 }
 
 .simulator-layout .toolbox {
-  width: 260px;      
-  min-width: 220px; 
-  max-width: 300px;  
+  width: 320px;
+  min-width: 220px;
+  max-width: 420px;
   background: #1e1e1e;
   color: #fff;
   display: flex;
   flex-direction: column;
   padding: 15px;
+  overflow: hidden;
+  border-right: 1px solid #444;
 }
 
-.simulator-layout .main-panel
-{
+.simulator-layout .toolbox .inner {
   flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.simulator-layout .main-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   position: relative;
 }
 
-.simulator-layout #three-container
-{
+.simulator-layout #three-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+}
+
+.io-table-wrapper {
+  min-height: 0;
+}
+
+.io-table-wrapper .overflow-auto {
+  min-height: 0;
 }
 
 .io-table-wrapper table {
@@ -41,7 +54,8 @@
   width: 100%;
 }
 
-.io-table-wrapper th, .io-table-wrapper td {
+.io-table-wrapper th,
+.io-table-wrapper td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,7 +68,7 @@
 }
 
 #io-table input[type="number"] {
-  text-align: center;         /* zarovnaj číslo na stred */
+  text-align: center;
   padding: 0.25rem 0.5rem;
   height: 100%;
   width: 100%;
@@ -68,103 +82,43 @@
   vertical-align: middle;
 }
 
-.simulator-layout
-{
-  height: calc(100vh - 56px);
-  overflow: hidden;
-}
-
-.simulator-layout .split-container
-{
-  display: flex;
-  height: 100%;
-  min-height: 0;
-}
-
-.simulator-layout .toolbox
-{
-  width: 320px;
-  min-width: 220px;
-  max-width: 420px;
-  background: #1e1e1e;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  padding: 15px;
-  overflow: hidden;
-}
-
-.simulator-layout .main-panel
-{
-  flex: 1;
-  min-width: 0;
-  position: relative;
-}
-
-.simulator-layout #three-container
-{
-  position: absolute;
-  inset: 0;
-}
-
-/* tabuľka nech sa vie scrollovať */
-.io-table-wrapper
-{
-  min-height: 0;
-}
-
-.io-table-wrapper .overflow-auto
-{
-  min-height: 0;
-}
-
-/* menšie obrazovky */
-@media (max-width: 992px)
-{
-  .simulator-layout .split-container
-  {
+@media (max-width: 991.98px) {
+  .simulator-layout .split-container {
     flex-direction: column;
   }
 
-  .simulator-layout .toolbox
-  {
+  .simulator-layout .main-panel {
+    order: 1;
+    min-height: 55vh;
+  }
+
+  .simulator-layout .toolbox {
+    order: 2;
     width: 100%;
     min-width: 100%;
     max-width: 100%;
-    height: 260px;
+    height: 35vh;
     padding: 10px;
-  }
-
-  .simulator-layout .main-panel
-  {
-    flex: 1;
-    min-height: 0;
+    border-right: none;
+    border-top: 1px solid #444;
   }
 }
 
-/* úplne malé obrazovky */
-@media (max-width: 576px)
-{
-  .simulator-layout
-  {
-    height: auto;
-    min-height: calc(100vh - 56px);
-    overflow: auto;
+@media (max-width: 575.98px) {
+  .simulator-layout .main-panel {
+    min-height: 50vh;
   }
 
-  .simulator-layout .toolbox
-  {
-    height: 220px;
+  .simulator-layout .toolbox {
+    height: 40vh;
     padding: 8px;
   }
 
-  .io-table-wrapper table
-  {
+  .io-table-wrapper table {
     font-size: 12px;
   }
 
-  #io-table input[type="number"]
-  {
+  #io-table input[type="number"] {
     font-size: 12px;
     padding: 0.2rem 0.35rem;
   }
