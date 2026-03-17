@@ -107,3 +107,12 @@ function renderIOTable()
     renderRow(name, 'OUT', val, false);
   }
 }
+
+window.renderIOTable = renderIOTable;
+
+window.resetIOPanel = function ()
+{
+  previousInputs = {};
+  previousOutputs = {};
+  renderIOTable();
+};

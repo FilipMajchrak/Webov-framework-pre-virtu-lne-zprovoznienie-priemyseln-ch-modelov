@@ -136,7 +136,6 @@ wss.on("connection", (ws) =>
   lastBrowserClient = ws;
   console.log("WS: simulátor pripojený");
 
-  // pošleme klientovi aktuálny stav IO
   ws.send(JSON.stringify({ type: "sync", IO }));
 
   ws.on("message", (msg) =>
@@ -145,23 +144,34 @@ wss.on("connection", (ws) =>
     {
       const data = JSON.parse(msg.toString());
 
+      // browser posiela len outputs aktuálnej scény
       if (data?.type === "io" && data.IO)
       {
         if (data.IO.outputs)
         {
-          IO.outputs = { ...IO.outputs, ...data.IO.outputs };
+          // NEmergeuj staré outputs, ale celé ich nahraď
+          IO.outputs = { ...data.IO.outputs };
         }
       }
 
-      // ak príde mapa scény, uložíme ju
+      // prepnutie scény = nová mapa + tvrdý reset IO
       if (data?.type === "scene" && data.map)
       {
         currentSceneMap = data.map;
-        console.log("[WS] Mapa scény prijatá.");
 
-        // poistka: aby vetvy existovali
-        IO.inputs = IO.inputs || {};
-        IO.outputs = IO.outputs || {};
+        if (data.defaultIO && typeof data.defaultIO === "object")
+        {
+          IO = JSON.parse(JSON.stringify(data.defaultIO));
+        }
+        else
+        {
+          IO = { inputs: {}, outputs: {} };
+        }
+
+        console.log("[WS] Mapa scény prijatá a IO resetované.");
+
+        // hneď pošli klientovi čistý sync
+        ws.send(JSON.stringify({ type: "sync", IO }));
       }
     }
     catch (e)
@@ -464,7 +474,7 @@ function startTick()
 
       if (lastBrowserClient && lastBrowserClient.readyState === lastBrowserClient.OPEN) 
       {
-        // klasický sync
+        // sync IO + modbus stats
         lastBrowserClient.send(JSON.stringify({
           type: "sync",
           IO,
@@ -476,15 +486,13 @@ function startTick()
           }
         }));
 
-        // systémové štatistiky (ale už naše vlastné)
+        // systémové štatistiky
         lastBrowserClient.send(JSON.stringify({
           type: "system",
           stats: {
             tickDurationMs: Number(tickDurationMs.toFixed(2))
           }
         }));
-
-        console.log(`[TICK] trvanie: ${tickDuration.toFixed(2)} ms`);
       }
     }
     catch (e)
@@ -495,6 +503,7 @@ function startTick()
     {
       tickRunning = false;
     }
+
   }, TICK_MS);
 }
 

@@ -6,25 +6,54 @@ window.ws = new WebSocket(`ws://${location.hostname}:${location.port}`);
 window.ws.onopen = () =>
 {
   console.log("[WS] Spojenie otvorené");
-  sendSceneToServer();
+
+  if (typeof sendSceneToServer === "function")
+  {
+    sendSceneToServer();
+  }
 };
 
 window.ws.onclose = () => console.log("[WS] Spojenie zatvorené");
 window.ws.onerror = (e) => console.error("[WS] Chyba:", e);
 
-window.ws.onmessage = (event) => 
+window.ws.onmessage = (event) =>
 {
-  try 
+  try
   {
     const data = JSON.parse(event.data);
 
-    if (data.type === "sync" && data.IO) 
+    if (data.type === "sync" && data.IO)
     {
-      // prepíš IO z hodnotami zo servera
-      window.IO.inputs  = { ...window.IO.inputs,  ...data.IO.inputs };
-      window.IO.outputs = { ...window.IO.outputs, ...data.IO.outputs };
+      // počas prepínania scény ignoruj sync zo servera
+      if (window.isSceneSwitching)
+      {
+        return;
+      }
 
-      // ===== DIGITÁLNE IO DO GRAFU =====
+      // vezmi default IO aktuálnej scény
+      const defaults =
+        window.sceneManager?.currentScene &&
+        typeof window.sceneManager.currentScene.getDefaultIO === "function"
+          ? window.sceneManager.currentScene.getDefaultIO()
+          : { inputs: {}, outputs: {} };
+
+      // prepíš celé IO, nemerguj so starým window.IO
+      window.IO = {
+        inputs: {
+          ...(defaults.inputs || {}),
+          ...(data.IO.inputs || {})
+        },
+        outputs: {
+          ...(defaults.outputs || {}),
+          ...(data.IO.outputs || {})
+        }
+      };
+
+      if (typeof window.resetIOPanel === "function")
+      {
+        window.resetIOPanel();
+      }
+
       if (window.graphWindow && !window.graphWindow.closed)
       {
         window.graphWindow.postMessage({
@@ -34,8 +63,12 @@ window.ws.onmessage = (event) =>
         }, "*");
       }
 
-      // ===== MODBUS ODOZVA DO GRAFU =====
-      if (data.stats && typeof data.stats.modbusLastMs === "number" && window.graphWindow && !window.graphWindow.closed)
+      if (
+        data.stats &&
+        typeof data.stats.modbusLastMs === "number" &&
+        window.graphWindow &&
+        !window.graphWindow.closed
+      )
       {
         window.graphWindow.postMessage({
           type: "modbus",
@@ -43,11 +76,13 @@ window.ws.onmessage = (event) =>
           time: new Date().toLocaleTimeString()
         }, "*");
 
-        sendSceneMapToGraphWindow();
-        //console.log("[MODBUS] posielam do graph okna:", data.stats.modbusLastMs);
+        if (typeof sendSceneMapToGraphWindow === "function")
+        {
+          sendSceneMapToGraphWindow();
+        }
       }
     }
-    // ===== SYSTEM STATS DO GRAFU =====
+
     if (data.type === "system" && data.stats && window.graphWindow && !window.graphWindow.closed)
     {
       window.graphWindow.postMessage({
@@ -57,10 +92,9 @@ window.ws.onmessage = (event) =>
         },
         time: new Date().toLocaleTimeString()
       }, "*");
-      //console.log("[GRAPH] poslaný tick:", data.stats.tickDurationMs);
     }
-  } 
-  catch (e) 
+  }
+  catch (e)
   {
     console.warn("[WS] Chyba pri spracovaní správy:", e.message);
   }
@@ -74,8 +108,16 @@ function sendSceneToServer()
   const scene = window.sceneManager.currentScene;
   const sceneName = scene.constructor.name;
   const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
+  const defaultIO = (typeof scene.getDefaultIO === "function")
+    ? scene.getDefaultIO()
+    : { inputs: {}, outputs: {} };
 
-  window.ws.send(JSON.stringify({type: "scene",name: sceneName,map: modbusMap}));
+  window.ws.send(JSON.stringify({
+    type: "scene",
+    name: sceneName,
+    map: modbusMap,
+    defaultIO
+  }));
 
   console.log("[WS] Scene+map odoslané:", sceneName);
 }
@@ -88,9 +130,10 @@ function sendSceneMapToGraphWindow()
   const scene = window.sceneManager.currentScene;
   const modbusMap = (typeof scene.getModbusMap === "function") ? scene.getModbusMap() : null;
 
-  window.graphWindow.postMessage({type: "sceneMap",map: modbusMap}, "*");
-
-  //console.log("[GRAPH] sceneMap odoslaná do graph okna");
+  window.graphWindow.postMessage({
+    type: "sceneMap",
+    map: modbusMap
+  }, "*");
 }
 
 const getTheme = async () => {
@@ -139,14 +182,12 @@ window.onload = async function ()
   // ==========================
   window.sceneManager = new SceneManager(renderer, camera);
 
-  // tu vytvoríš scénu
+  // vytvorenie sceny
   const scene = new Scene1(camera);
   await window.sceneManager.loadScene(scene);
 
   sendSceneToServer();
   sendSceneMapToGraphWindow();
-
-  // pošleme na server info o scéne až keď sa otvorí WebSocket (viď onopen vyššie)
 
   // ==========================
   // Prispôsobenie renderera a kamery pri zmene veľkosti okna
@@ -183,7 +224,12 @@ window.onload = async function ()
     // posielaj celé IO (inputs aj outputs), nie len outputs
     if (window.ws && window.ws.readyState === WebSocket.OPEN) 
     {
-      window.ws.send(JSON.stringify({ type: "io", IO: window.IO }));
+      window.ws.send(JSON.stringify({
+        type: "io",
+        IO: {
+          outputs: window.IO.outputs
+        }
+      }));
     }
 
     // Aktualizuj IO tabuľku (len ak sa zmenila)

@@ -1,12 +1,10 @@
 // ============================================
-// Inicializácia globálneho I/O systému (vstupy + výstupy)
+// Inicializácia globálneho I/O systému 
 // ============================================
 
-// Ak IO ešte neexistuje, vytvor ho s default hodnotami
-// → hodnoty sa použijú len ako inicializácia pri prvom spustení
-// → ďalej už PLC/Modbus alebo simulátor menia hodnoty a neprepíšu sa späť
-if (!window.IO) {
-  window.IO = {
+function createScene1IO()
+{
+  return {
     inputs: {
       start: false,
       conv: false,
@@ -32,9 +30,25 @@ if (!window.IO) {
   };
 }
 
+if (!window.IO)
+{
+  window.IO = createScene1IO();
+}
+
+Scene1.prototype.getDefaultIO = function ()
+{
+  return createScene1IO();
+};
+
+Scene1.prototype.resetIO = function ()
+{
+  window.IO = createScene1IO();
+};
+
 // ============================================
 // ============== Scene1 - KONŠTRUKTOR ========
 // ============================================
+
 
 function Scene1(camera)
 {
@@ -379,8 +393,6 @@ Scene1.prototype.addHelpers = function ()
   this.scene.add(gridHelper);
 };
 
-// Voliteľné hooky
-//Scene1.prototype.init = function () {};
 Scene1.prototype.dispose = function () {};
 
 // ======== Hlavný update cyklus scény ========

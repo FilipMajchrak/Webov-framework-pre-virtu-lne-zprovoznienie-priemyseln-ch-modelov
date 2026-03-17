@@ -1,0 +1,9 @@
+{
+  "inputCoils": {
+    "32768": { "path": "inputs.testStart" }
+  },
+
+  "outputCoils": {
+    "32768": { "path": "outputs.testLamp" }
+  }
+}

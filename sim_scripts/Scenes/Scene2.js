@@ -1,8 +1,9 @@
 // ============================================
 // Inicializácia globálneho I/O systému
 // ============================================
-if (!window.IO) {
-  window.IO = {
+function createScene2IO()
+{
+  return {
     inputs: {
       testStart: false
     },
@@ -11,6 +12,20 @@ if (!window.IO) {
     }
   };
 }
+
+if (!window.IO) {
+  window.IO = createScene2IO();
+}
+
+Scene2.prototype.getDefaultIO = function ()
+{
+  return createScene2IO();
+};
+
+Scene2.prototype.resetIO = function ()
+{
+  window.IO = createScene2IO();
+};
 
 // ============================================
 // ============== Scene2 - KONŠTRUKTOR =========
@@ -36,8 +51,13 @@ Scene2.prototype.getModbusMap = function ()
 
 Scene2.prototype.init = async function ()
 {
-  // ak nechceš mapovanie, nechaj null
-  this.modbusMap = null;
+  try {
+    const res = await fetch("sim_scripts/Scenes/modbusMap_scene2.json");
+    this.modbusMap = await res.json();
+  } catch (e) {
+    console.error("[Scene2] Modbus map load failed", e);
+    this.modbusMap = null;
+  }
 
   this.initScene();
 };
