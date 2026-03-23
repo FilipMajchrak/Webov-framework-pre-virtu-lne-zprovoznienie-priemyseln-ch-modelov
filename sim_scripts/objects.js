@@ -196,3 +196,51 @@ function createFallingCylinder({scene,position = [0, 20, 0],rotation = [0, 0, 0]
 
   return { mesh: collider, body: collider };
 }
+
+
+function createFallingSphere({scene,position = [0, 20, 0],rotation = [0, 0, 0],radius = 1,widthSegments = 24,heightSegments = 24,color = 0x0000ff,mass = 1,friction = 0.8,restitution = 0.3}, name = '')
+{
+  // Vizuálna geometria
+  const visualGeometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
+  const visualMaterial = new THREE.MeshStandardMaterial({ color });
+  const visual = new THREE.Mesh(visualGeometry, visualMaterial);
+
+  visual.position.set(...position);
+  visual.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  visual.name = name + '_Visual';
+  scene.add(visual);
+
+  // Kolízna geometria
+  const physMaterial = Physijs.createMaterial(
+    new THREE.MeshStandardMaterial({ visible: false }),
+    friction,
+    restitution
+  );
+
+  const collider = new Physijs.SphereMesh(
+    new THREE.SphereGeometry(radius, widthSegments, heightSegments),
+    physMaterial,
+    mass
+  );
+
+  collider.position.set(...position);
+  collider.rotation.set(degToRad(rotation[0]),degToRad(rotation[1]),degToRad(rotation[2]));
+  collider.name = name;
+
+  // Synchronizácia vizuálu s fyzikálnym telom
+  collider.userData.syncVisual = () =>
+  {
+    visual.position.copy(collider.position);
+    visual.quaternion.copy(collider.quaternion);
+  };
+
+  collider.userData.syncVisual();
+
+  // Debug
+  showHitbox(visual, scene, collider);
+  showDetectionProxyBox(collider, scene);
+
+  scene.add(collider);
+
+  return { mesh: visual, body: collider };
+}

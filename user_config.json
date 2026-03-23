@@ -8,6 +8,6 @@
   },
   "debug": {
     "hitbox": false,
-    "stats": true
+    "stats": false
   }
 }

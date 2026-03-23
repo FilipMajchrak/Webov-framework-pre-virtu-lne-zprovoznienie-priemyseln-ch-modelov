@@ -1,6 +1,7 @@
 // ============================================
 // Inicializácia globálneho I/O systému
 // ============================================
+
 function createScene2IO()
 {
   return {
@@ -13,7 +14,8 @@ function createScene2IO()
   };
 }
 
-if (!window.IO) {
+if (!window.IO)
+{
   window.IO = createScene2IO();
 }
 
@@ -30,20 +32,29 @@ Scene2.prototype.resetIO = function ()
 // ============================================
 // ============== Scene2 - KONŠTRUKTOR =========
 // ============================================
+
 function Scene2(camera)
 {
   this.scene = new Physijs.Scene();
   this.scene.setGravity(new THREE.Vector3(0, -9.81, 0));
 
   this.camera = camera;
+
   this.updatables = [];
+  this.movingBodies = [];
+  this.detectionZones = [];
+
   this.ready = false;
+  this.loadedCount = 0;
+  this.expectedLoads = 1;
+
   this.modbusMap = null;
 }
 
 // ============================================
 // Modbus mapovanie
 // ============================================
+
 Scene2.prototype.getModbusMap = function ()
 {
   return this.modbusMap || {};
@@ -51,10 +62,14 @@ Scene2.prototype.getModbusMap = function ()
 
 Scene2.prototype.init = async function ()
 {
-  try {
+  try
+  {
     const res = await fetch("sim_scripts/Scenes/modbusMap_scene2.json");
     this.modbusMap = await res.json();
-  } catch (e) {
+    console.log("[Scene2] Modbus map loaded", this.modbusMap);
+  }
+  catch (e)
+  {
     console.error("[Scene2] Modbus map load failed", e);
     this.modbusMap = null;
   }
@@ -63,25 +78,71 @@ Scene2.prototype.init = async function ()
 };
 
 // ============================================
-// Inicializácia scény
+// ========== Scene2.prototype.initScene ======
 // ============================================
+
 Scene2.prototype.initScene = function ()
 {
+  this.activatedObjects = new Set();
+
   this.addLights();
   this.addHelpers();
 
-  // test logika
+  loadOBJModel({
+    scene: this.scene,
+    url: 'obj/conv1.obj',
+    position: [0, 5, 0],
+    scale: [0.01, 0.01, 0.01],
+    rotation: [0, 0, 180],
+    mass: 0,
+    onLoaded: (obj, collider) =>
+    {
+      this.conv1 = obj;
+      this.conv1Body = collider;
+
+      const boundingMesh = createBoundingBoxMesh(obj);
+      this.scene.add(boundingMesh);
+      showHitbox(obj, this.scene, boundingMesh);
+
+      this.loadedCount++;
+      if (this.loadedCount === this.expectedLoads)
+      {
+        this.ready = true;
+      }
+    }
+  });
+
+  const ball = createFallingSphere({
+    scene: this.scene,
+    position: [0, 15, 10],
+    radius: 1,
+    color: 0x3399ff,
+    mass: 1
+  }, 'Ball1');
+
+  this.ball = ball.mesh;
+  this.ballBody = ball.body;
+
+  this.movingBodies.push(ball.body);
+
+  // ============================================
+  // Hlavný update blok – logika scény
+  // ============================================
   this.updatables.push(() =>
   {
     IO.outputs.testLamp = IO.inputs.testStart;
-  });
 
-  this.ready = true;
+    for (const obj of this.movingBodies)
+    {
+      obj.userData?.syncVisual?.();
+    }
+  });
 };
 
 // ============================================
-// Svetlá
+// ========== Scene2.prototype.addLights =======
 // ============================================
+
 Scene2.prototype.addLights = function ()
 {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -93,8 +154,9 @@ Scene2.prototype.addLights = function ()
 };
 
 // ============================================
-// Pomocná mriežka
+// ========== Scene2.prototype.addHelpers ======
 // ============================================
+
 Scene2.prototype.addHelpers = function ()
 {
   const gridHelper = new THREE.GridHelper(100, 100);
@@ -104,13 +166,10 @@ Scene2.prototype.addHelpers = function ()
   this.scene.add(gridHelper);
 };
 
-// ============================================
-// Dispose
-// ============================================
 Scene2.prototype.dispose = function () {};
 
 // ============================================
-// Update
+// ========== Scene2.prototype.update ==========
 // ============================================
 Scene2.prototype.update = function (delta)
 {
