@@ -300,6 +300,7 @@ Scene1.prototype.initScene = function ()
 
   //========================================
   // Hlavný update blok – volaný každý frame
+  //========================================
   this.updatables.push(() => {
     for (const obj of this.movingBodies)
     {
