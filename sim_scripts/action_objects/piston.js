@@ -1,96 +1,188 @@
-// Pole pre uloženie všetkých vytvorených piestov
 const Pistons = [];
 
-// Hlavná funkcia na vytvorenie piestu
 function createPiston(
-  scene, // THREE.js scéna, do ktorej sa piest pridá
+  scene,
   {
-    name = "piston",              // názov piestu (voliteľný)
-    position = [0, 5, 0],         // začiatočná pozícia [x, y, z]
-    size = [1, 1, 1],             // rozmery piestu [šírka, výška, hĺbka]
-    color = 0x00ff00,             // farba piestu (zelená ako predvolené)
-    moveDistance = 2,            // vzdialenosť, o ktorú sa piest vysunie
-    speed = 2,                   // rýchlosť pohybu piestu
-    direction = [0, 0, 1],       // smer pohybu (predvolene pozdĺž osi Z)
-    getInputFn = () => false,    // funkcia na čítanie vstupu (napr. IO.inputs.p1)
-    setOutputFn = (v) => {},     // funkcia na nastavenie výstupu (napr. IO.outputs.pistonExtended)
-    setRetractedFn = (v) => {},  // funkcia na nastavenie výstupu (napr. IO.outputs.pistonRetracted)
-    affectedObjects = []         // zoznam objektov, ktoré môže piest zhodiť pri kontakte
+    name = "piston",
+    position = [0, 5, 0],
+    size = [1, 1, 1],
+    color = 0x00ff00,
+    moveDistance = 2,
+    speed = 2,
+    direction = [0, 0, 1],
+    getInputFn = () => false,
+    setOutputFn = (v) => {},
+    setRetractedFn = (v) => {},
+    affectedObjects = [],
+    supportedObject = null,
+    supportEpsilon = 0.2
   }
 )
 {
-  // Vytvorenie geometrie a materiálu pre piest
   const geometry = new THREE.BoxGeometry(...size);
-  const material = new THREE.MeshStandardMaterial({ color });
+  const material = Physijs.createMaterial(
+    new THREE.MeshStandardMaterial({ color }),
+    0.9,
+    0.0
+  );
 
-  // Vytvorenie samotného mesh objektu
-  const piston = new THREE.Mesh(geometry, material);
-  piston.position.set(...position);         // Nastavenie pozície
-  piston.rotation.set(0, 0, 0);             // Žiadna rotácia
-  piston.name = name;                       // Priradenie názvu
+  const piston = new Physijs.BoxMesh(geometry, material, 1000);
+  piston.position.set(...position);
+  piston.rotation.set(0, 0, 0);
+  piston.name = name;
 
-  // Pridanie piestu do scény
+  let physicsReady = false;
+
+  piston.addEventListener("ready", function ()
+  {
+    physicsReady = true;
+
+    if (typeof piston.setAngularFactor === "function")
+    {
+      piston.setAngularFactor(new THREE.Vector3(0, 0, 0));
+    }
+
+    if (typeof piston.setLinearFactor === "function")
+    {
+      const fx = Math.abs(direction[0]) > 0 ? 1 : 0;
+      const fy = Math.abs(direction[1]) > 0 ? 1 : 0;
+      const fz = Math.abs(direction[2]) > 0 ? 1 : 0;
+      piston.setLinearFactor(new THREE.Vector3(fx, fy, fz));
+    }
+
+    if (typeof piston.setDamping === "function")
+    {
+      piston.setDamping(0.9, 0.9);
+    }
+  });
+
   scene.add(piston);
-
-  // Zobrazenie okrajového rámu pre debugovanie (voliteľné)
   showHitbox(piston, scene);
 
-  // Výpočet začiatočnej a koncovej pozície piestu
   const start = new THREE.Vector3(...position);
-  const dir = new THREE.Vector3(...direction).normalize(); // normalizovaný smer pohybu
-  const end = start.clone().addScaledVector(dir, moveDistance); // cieľová pozícia
+  const dir = new THREE.Vector3(...direction).normalize();
+  const end = start.clone().addScaledVector(dir, moveDistance);
 
-  // Aktuálna pozícia piestu (kopíruje začiatok)
-  let current = start.clone();
+  function isPhysicsBody(obj)
+  {
+    return !!obj &&
+      obj instanceof THREE.Object3D &&
+      typeof obj.setLinearVelocity === "function";
+  }
 
-  // Stav piestu – "extending", "retracting", alebo "idle"
-  let state = "idle";
+  function getSupportedRadius()
+  {
+    if (!supportedObject) return 0.5;
 
-  // Hlavná aktualizačná funkcia, volaná každý frame
+    let radius = 0.5;
+
+    if (supportedObject.geometry)
+    {
+      if (!supportedObject.geometry.boundingSphere)
+      {
+        supportedObject.geometry.computeBoundingSphere();
+      }
+
+      if (supportedObject.geometry.boundingSphere)
+      {
+        const scaleX = supportedObject.scale?.x ?? 1;
+        const scaleY = supportedObject.scale?.y ?? 1;
+        const scaleZ = supportedObject.scale?.z ?? 1;
+        const maxScale = Math.max(scaleX, scaleY, scaleZ);
+        radius = supportedObject.geometry.boundingSphere.radius * maxScale;
+      }
+    }
+
+    return radius;
+  }
+
+  function supportTop(pistonVelocity)
+  {
+    if (!physicsReady) return;
+    if (!isPhysicsBody(supportedObject)) return;
+
+    piston.updateMatrixWorld(true);
+    supportedObject.updateMatrixWorld(true);
+
+    const pistonBox = new THREE.Box3().setFromObject(piston);
+
+    const topY = pistonBox.max.y;
+    const leftX = pistonBox.min.x;
+    const rightX = pistonBox.max.x;
+    const frontZ = pistonBox.min.z;
+    const backZ = pistonBox.max.z;
+
+    const objPos = supportedObject.position.clone();
+    const radius = getSupportedRadius();
+    const objectBottom = objPos.y - radius;
+
+    const insideX = objPos.x >= leftX - radius && objPos.x <= rightX + radius;
+    const insideZ = objPos.z >= frontZ - radius && objPos.z <= backZ + radius;
+
+    const closeToTop =
+      objectBottom <= topY + supportEpsilon &&
+      objectBottom >= topY - radius - supportEpsilon;
+
+    if (insideX && insideZ && closeToTop)
+    {
+      const v = supportedObject.getLinearVelocity();
+
+      supportedObject.setLinearVelocity(
+        new THREE.Vector3(
+          pistonVelocity.x,
+          Math.max(0, v.y),
+          pistonVelocity.z
+        )
+      );
+
+      if (typeof supportedObject.setAngularVelocity === "function")
+      {
+        supportedObject.setAngularVelocity(new THREE.Vector3(0, 0, 0));
+      }
+    }
+  }
+
   function update(delta)
   {
-    const extend = getInputFn();                   // získať aktuálny stav vstupu
-    const target = extend ? end : start;           // cieľ je end alebo start podľa vstupu
+    if (!physicsReady) return;
 
-    const distance = current.distanceTo(target);   // vzdialenosť do cieľa
-    const reached = distance < 0.01;               // považuj za "dokončené", ak je veľmi blízko
+    const extend = getInputFn();
+    const target = extend ? end : start;
 
-    if (reached)
+    const toTarget = target.clone().sub(piston.position);
+    const distance = toTarget.length();
+
+    if (distance < 0.02)
     {
-      state = "idle";               // ak je v cieli, nehybne čaká
-      setOutputFn(extend);          // výstup hovorí, či je práve vysunutý
+      piston.setLinearVelocity(new THREE.Vector3(0, 0, 0));
+
+      setOutputFn(extend);
+      setRetractedFn(!extend);
+
+      supportTop(new THREE.Vector3(0, 0, 0));
       return;
     }
 
-    // Nastavenie stavu podľa smeru
-    state = extend ? "extending" : "retracting";
+    const velocity = toTarget.normalize().multiplyScalar(speed);
+    piston.setLinearVelocity(velocity);
 
-    // Vypočítaj posun (maximálne o 'speed * delta', ale nie viac ako zostávajúca vzdialenosť)
-    const step = Math.min(speed * delta, distance);
-    const directionVec = target.clone().sub(current).normalize(); // smer k cieľu
-    current.addScaledVector(directionVec, step);                  // posuň sa bližšie
+    setOutputFn(extend && piston.position.distanceTo(end) < 0.05);
+    setRetractedFn(!extend && piston.position.distanceTo(start) < 0.05);
 
-    piston.position.copy(current);                                // aplikuj novú pozíciu
+    supportTop(velocity);
 
-    // Nastav výstup len ak si takmer v koncovej pozícii (vysunutý)
-    setOutputFn(extend && current.distanceTo(end) < 0.01);
-    setRetractedFn(!extend && current.distanceTo(start) < 0.01);
-
-    //Kolízna detekcia pri vysúvaní
     if (extend)
     {
       const pistonBox = new THREE.Box3().setFromObject(piston);
 
       for (const obj of affectedObjects)
       {
-        // kontroluj iba fyzikálne objekty (Physijs)
-        if (!obj || typeof obj.setLinearVelocity !== "function") continue;
+        if (!isPhysicsBody(obj)) continue;
 
         const objBox = new THREE.Box3().setFromObject(obj);
 
         if (pistonBox.intersectsBox(objBox))
         {
-          // aplikuj odtlačnú silu smerom od piestu
           const force = dir.clone().multiplyScalar(5);
           obj.setLinearVelocity(force);
         }
@@ -98,12 +190,8 @@ function createPiston(
     }
   }
 
-  // Objekt reprezentujúci piest (vrátený volajúcemu)
-  const pistonObj = {name,mesh: piston, update};
-
-  // Uloženie do zoznamu všetkých piestov
+  const pistonObj = { name, mesh: piston, update };
   Pistons.push(pistonObj);
 
-  // Vrátenie piestu na ďalšie použitie
   return pistonObj;
 }

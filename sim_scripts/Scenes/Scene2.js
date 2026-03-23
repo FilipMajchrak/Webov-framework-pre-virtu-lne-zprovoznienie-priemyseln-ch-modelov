@@ -6,10 +6,13 @@ function createScene2IO()
 {
   return {
     inputs: {
-      testStart: false
+      testStart: false,
+      p1: false,
     },
     outputs: {
-      testLamp: false
+      testLamp: false,
+      p1_rec: true,
+      p1_ex: false,
     }
   };
 }
@@ -112,18 +115,64 @@ Scene2.prototype.initScene = function ()
     }
   });
 
-  const ball = createFallingSphere({
+  const sphere = createFallingSphere({
     scene: this.scene,
-    position: [0, 15, 10],
+    position: [0, 20, 0],
     radius: 1,
     color: 0x3399ff,
     mass: 1
-  }, 'Ball1');
+  }, 'sphere1');
 
-  this.ball = ball.mesh;
-  this.ballBody = ball.body;
+  this.sphere = sphere.mesh;
+  this.sphereBody = sphere.body;
 
-  this.movingBodies.push(ball.body);
+  this.movingBodies.push(sphere.body);
+
+  const size = 0.5
+  const height = 10
+  const offset = 1
+
+  const center = [0, 13, 0] 
+
+  const pillars = [
+    [-offset, height / 2, -offset],
+    [ offset, height / 2, -offset],
+    [-offset, height / 2,  offset],
+    [ offset, height / 2,  offset],
+  ]
+
+  pillars.forEach(pos => {
+    createStaticCube({
+      scene: this.scene,
+      position: [
+        pos[0] + center[0],
+        pos[1] + center[1],
+        pos[2] + center[2],
+      ],
+      size: [size, height, size],
+    })
+  })
+
+  this.piston1 = createPiston(this.scene, {
+    name: "p1",
+    position: [0, 13, 1],
+    size: [1, 1, 5],
+    color: 0x00cc00,
+    moveDistance: 3,
+    speed: 4,
+    direction: [0, 0, 1],
+    getInputFn: () => IO.inputs.p1,
+    setOutputFn: (v) => {
+      IO.outputs.p1_ex = v;
+    },
+    setRetractedFn: (v) => {
+      IO.outputs.p1_rec = v;
+    },
+    affectedObjects: [],
+    supportedObject: this.sphereBody
+  });
+
+this.updatables.push((delta) => this.piston1.update(delta));
 
   // ============================================
   // Hlavný update blok – logika scény
