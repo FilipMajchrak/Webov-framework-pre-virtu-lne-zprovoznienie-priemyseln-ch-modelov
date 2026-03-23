@@ -1,12 +1,13 @@
 {
   "inputCoils": {
-    "32768": { "path": "inputs.testStart" },
-    "32769": { "path": "inputs.p1" }
+    "32769": { "path": "inputs.p1" },
+    "32770": { "path": "inputs.p2" }
   },
 
   "outputCoils": {
-    "32768": { "path": "outputs.testLamp" },
     "32769": { "path": "outputs.p1_rec" },
-    "32770": { "path": "outputs.p1_ex" }
+    "32770": { "path": "outputs.p1_ex" },
+    "32771": { "path": "outputs.p2_rec" },
+    "32772": { "path": "outputs.p2_ex" }
   }
 }

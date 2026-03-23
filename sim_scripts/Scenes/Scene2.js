@@ -6,13 +6,14 @@ function createScene2IO()
 {
   return {
     inputs: {
-      testStart: false,
       p1: false,
+      p2: false,
     },
     outputs: {
-      testLamp: false,
       p1_rec: true,
       p1_ex: false,
+      p2_rec: true,
+      p2_ex: false,
     }
   };
 }
@@ -115,18 +116,23 @@ Scene2.prototype.initScene = function ()
     }
   });
 
-  const sphere = createFallingSphere({
-    scene: this.scene,
-    position: [0, 20, 0],
-    radius: 1,
-    color: 0x3399ff,
-    mass: 1
-  }, 'sphere1');
+  const spheres = [];
+  for (let i = 0; i < 3; i++)
+  {
+    const sphere = createFallingSphere({
+      scene: this.scene,
+      position: [0, 20 + i * 2, 0],
+      radius: 1,
+      color: 0x3399ff,
+      mass: 1
+    }, `sphere${i}`);
 
-  this.sphere = sphere.mesh;
-  this.sphereBody = sphere.body;
+    spheres.push(sphere);
+    this.movingBodies.push(sphere.body);
+  }
 
-  this.movingBodies.push(sphere.body);
+  this.spheres = spheres;
+  this.sphereBodies = spheres.map(s => s.body);
 
   const size = 0.5
   const height = 10
@@ -155,8 +161,8 @@ Scene2.prototype.initScene = function ()
 
   this.piston1 = createPiston(this.scene, {
     name: "p1",
-    position: [0, 13, 1],
-    size: [1, 1, 5],
+    position: [0, 14, 1],
+    size: [1, 0.3, 5],
     color: 0x00cc00,
     moveDistance: 3,
     speed: 4,
@@ -169,10 +175,30 @@ Scene2.prototype.initScene = function ()
       IO.outputs.p1_rec = v;
     },
     affectedObjects: [],
+    supportedObject: [],
+  });
+  this.updatables.push((delta) => this.piston1.update(delta));
+
+  this.piston2 = createPiston(this.scene, {
+    name: "p2",
+    position: [0, 16.5, 1],
+    size: [1, 0.3, 5],
+    color: 0x00cc00,
+    moveDistance: 3,
+    speed: 4,
+    direction: [0, 0, 1],
+    getInputFn: () => IO.inputs.p2,
+    setOutputFn: (v) => {
+      IO.outputs.p2_ex = v;
+    },
+    setRetractedFn: (v) => {
+      IO.outputs.p2_rec = v;
+    },
+    affectedObjects: [],
     supportedObject: this.sphereBody
   });
 
-this.updatables.push((delta) => this.piston1.update(delta));
+  this.updatables.push((delta) => this.piston2.update(delta));
 
   // ============================================
   // Hlavný update blok – logika scény
