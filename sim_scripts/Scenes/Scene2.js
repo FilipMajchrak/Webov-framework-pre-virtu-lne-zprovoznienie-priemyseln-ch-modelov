@@ -126,7 +126,7 @@ Scene2.prototype.initScene = function ()
     const sphere = createFallingSphere({
       scene: this.scene,
       position: [0, 20 + i * 2, 0],
-      radius: 1,
+      radius: 0.5,
       color: 0x3399ff,
       mass: 1
     }, `sphere${i}`);
@@ -138,9 +138,9 @@ Scene2.prototype.initScene = function ()
   this.spheres = spheres;
   this.sphereBodies = spheres.map(s => s.body);
 
-  const size = 0.5
+  const size = 0.3
   const height = 10
-  const offset = 1
+  const offset = 0.5
 
   const center = [0, 13, 0] 
 
@@ -165,8 +165,8 @@ Scene2.prototype.initScene = function ()
 
   this.piston1 = createPiston(this.scene, {
     name: "p1",
-    position: [0, 14, 1],
-    size: [1, 0.3, 5],
+    position: [0, 14, 1.5],
+    size: [0.4, 0.2, 4],
     color: 0x00cc00,
     moveDistance: 3,
     speed: 4,
@@ -185,8 +185,8 @@ Scene2.prototype.initScene = function ()
 
   this.piston2 = createPiston(this.scene, {
     name: "p2",
-    position: [0, 16.5, 1],
-    size: [1, 0.3, 5],
+    position: [0, 15.25, 1.5],
+    size: [0.4, 0.2, 4],
     color: 0x00cc00,
     moveDistance: 3,
     speed: 4,

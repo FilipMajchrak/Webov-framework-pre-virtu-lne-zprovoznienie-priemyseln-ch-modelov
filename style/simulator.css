@@ -1,6 +1,5 @@
 .simulator-layout {
-  flex: 1;
-  min-height: 0;
+  height: calc(100vh - 56px);
   overflow: hidden;
 }
 
@@ -122,4 +121,29 @@
     font-size: 12px;
     padding: 0.2rem 0.35rem;
   }
+}
+
+.simulator-layout .toolbox {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+}
+
+.simulator-layout .toolbox .inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.io-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.io-table-wrapper > div {
+  flex: 1;
+  overflow-y: auto; 
 }
