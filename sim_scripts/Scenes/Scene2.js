@@ -8,12 +8,16 @@ function createScene2IO()
     inputs: {
       p1: false,
       p2: false,
+      conv: false,
     },
     outputs: {
       p1_rec: true,
       p1_ex: false,
       p2_rec: true,
       p2_ex: false,
+      conv_start: false,
+      conv_end: false,
+      davkovac_pos:false
     }
   };
 }
@@ -122,7 +126,7 @@ Scene2.prototype.initScene = function ()
     const sphere = createFallingSphere({
       scene: this.scene,
       position: [0, 20 + i * 2, 0],
-      radius: 1,
+      radius: 0.5,
       color: 0x3399ff,
       mass: 1
     }, `sphere${i}`);
@@ -134,9 +138,9 @@ Scene2.prototype.initScene = function ()
   this.spheres = spheres;
   this.sphereBodies = spheres.map(s => s.body);
 
-  const size = 0.5
+  const size = 0.3
   const height = 10
-  const offset = 1
+  const offset = 0.5
 
   const center = [0, 13, 0] 
 
@@ -161,8 +165,8 @@ Scene2.prototype.initScene = function ()
 
   this.piston1 = createPiston(this.scene, {
     name: "p1",
-    position: [0, 14, 1],
-    size: [1, 0.3, 5],
+    position: [0, 14, 1.5],
+    size: [0.4, 0.2, 4],
     color: 0x00cc00,
     moveDistance: 3,
     speed: 4,
@@ -181,8 +185,8 @@ Scene2.prototype.initScene = function ()
 
   this.piston2 = createPiston(this.scene, {
     name: "p2",
-    position: [0, 16.5, 1],
-    size: [1, 0.3, 5],
+    position: [0, 15.25, 1.5],
+    size: [0.4, 0.2, 4],
     color: 0x00cc00,
     moveDistance: 3,
     speed: 4,
@@ -195,22 +199,90 @@ Scene2.prototype.initScene = function ()
       IO.outputs.p2_rec = v;
     },
     affectedObjects: [],
-    supportedObject: this.sphereBody
+    supportedObject: []
   });
 
   this.updatables.push((delta) => this.piston2.update(delta));
 
-  // ============================================
+
+    this.detectionBox = createDetectionBox({
+    width: 4,
+    height: 0.2,
+    depth: 26,
+    scene: this.scene,
+    position: [-0.5, 9.2, 0],
+    moveDirection: new THREE.Vector3(0, 0, 1),
+    moveSpeed: 3,
+    inputCondition: "conv"
+  });
+
+  this.raySensor1 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, -11),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.conv_start = true,
+    onClear: () => IO.outputs.conv_start = false
+  });
+  this.updatables.push(() => this.raySensor1.update());
+
+  this.raySensor2 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 0),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.davkovac_pos = true,
+    onClear: () => IO.outputs.davkovac_pos = false
+  });
+  this.updatables.push(() => this.raySensor2.update());
+
+  this.raySensor3 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 11),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.conv_end = true,
+    onClear: () => IO.outputs.conv_end = false
+  });
+  this.updatables.push(() => this.raySensor3.update());
+
+  this.box1 = createOpenBox({
+    scene: this.scene,
+    position: [-0.5, 12, -11],
+    size: [3, 2.5, 3],
+    wallThickness: 0.1,
+    color: 0x8b5a2b,
+    mass: 2
+  }, 'box1');
+  this.movingBodies.push(this.box1.body);
+  
+
   // Hlavný update blok – logika scény
-  // ============================================
   this.updatables.push(() =>
   {
-    IO.outputs.testLamp = IO.inputs.testStart;
-
     for (const obj of this.movingBodies)
     {
       obj.userData?.syncVisual?.();
+
+      const target = obj.userData?.detectionTarget ?? obj;
+      const objectBox = new THREE.Box3().setFromObject(target);
+
+      const isInBox = this.detectionBox.box3.intersectsBox(objectBox);
+      if (isInBox && IO.inputs.conv)
+      {
+        moveDetectedObject(obj, this.detectionBox);
+        this.activatedObjects.add(obj);
+      }
     }
+
+    updateDetectedObjectsMovement();
+    this.box1.update();
   });
 };
 
