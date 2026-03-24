@@ -1,7 +1,8 @@
 {
   "inputCoils": {
-    "32769": { "path": "inputs.p1" },
-    "32770": { "path": "inputs.p2" }
+    "32768": { "path": "inputs.p1" },
+    "32769": { "path": "inputs.p2" },
+    "32770": { "path": "inputs.conv" }
   },
 
   "outputCoils": {

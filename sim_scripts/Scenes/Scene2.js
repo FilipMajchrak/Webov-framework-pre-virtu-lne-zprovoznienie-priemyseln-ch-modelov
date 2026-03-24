@@ -8,6 +8,7 @@ function createScene2IO()
     inputs: {
       p1: false,
       p2: false,
+      conv: false,
     },
     outputs: {
       p1_rec: true,
@@ -195,22 +196,42 @@ Scene2.prototype.initScene = function ()
       IO.outputs.p2_rec = v;
     },
     affectedObjects: [],
-    supportedObject: this.sphereBody
+    supportedObject: []
   });
 
   this.updatables.push((delta) => this.piston2.update(delta));
 
-  // ============================================
+
+    this.detectionBox = createDetectionBox({
+    width: 4,
+    height: 0.2,
+    depth: 26,
+    scene: this.scene,
+    position: [-0.5, 9.2, 0],
+    moveDirection: new THREE.Vector3(0, 0, 1),
+    moveSpeed: 3,
+    inputCondition: "conv"
+  });
+
   // Hlavný update blok – logika scény
-  // ============================================
   this.updatables.push(() =>
   {
-    IO.outputs.testLamp = IO.inputs.testStart;
-
     for (const obj of this.movingBodies)
     {
       obj.userData?.syncVisual?.();
+
+      const target = obj.userData?.detectionTarget ?? obj;
+      const objectBox = new THREE.Box3().setFromObject(target);
+
+      const isInBox = this.detectionBox.box3.intersectsBox(objectBox);
+      if (isInBox && IO.inputs.conv)
+      {
+        moveDetectedObject(obj, this.detectionBox);
+        this.activatedObjects.add(obj);
+      }
     }
+
+    updateDetectedObjectsMovement();
   });
 };
 
