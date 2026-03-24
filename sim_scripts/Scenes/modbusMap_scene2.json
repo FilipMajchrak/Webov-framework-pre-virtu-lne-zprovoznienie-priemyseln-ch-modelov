@@ -9,6 +9,10 @@
     "32769": { "path": "outputs.p1_rec" },
     "32770": { "path": "outputs.p1_ex" },
     "32771": { "path": "outputs.p2_rec" },
-    "32772": { "path": "outputs.p2_ex" }
+    "32772": { "path": "outputs.p2_ex" },
+    "32773": { "path": "outputs.conv_start"},
+    "32774": { "path": "outputs.conv_end"},
+    "32775": { "path": "outputs.davkovac_pos"}
+    
   }
 }

@@ -15,6 +15,9 @@ function createScene2IO()
       p1_ex: false,
       p2_rec: true,
       p2_ex: false,
+      conv_start: false,
+      conv_end: false,
+      davkovac_pos:false
     }
   };
 }
@@ -212,6 +215,44 @@ Scene2.prototype.initScene = function ()
     moveSpeed: 3,
     inputCondition: "conv"
   });
+
+  this.raySensor1 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, -11),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.conv_start = true,
+    onClear: () => IO.outputs.conv_start = false
+  });
+  this.updatables.push(() => this.raySensor1.update());
+
+  this.raySensor2 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 0),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.davkovac_pos = true,
+    onClear: () => IO.outputs.davkovac_pos = false
+  });
+  this.updatables.push(() => this.raySensor2.update());
+
+  this.raySensor3 = createRaySensor({
+    origin: new THREE.Vector3(2, 10, 11),
+    rotation: new THREE.Euler(0,degToRad(90),0),
+    length: 5,
+    scene: this.scene,
+    targetObjects: this.movingBodies,
+    showRay: true,
+    onDetect: (hit) => IO.outputs.conv_end = true,
+    onClear: () => IO.outputs.conv_end = false
+  });
+  this.updatables.push(() => this.raySensor3.update());
+
+  
 
   // Hlavný update blok – logika scény
   this.updatables.push(() =>
