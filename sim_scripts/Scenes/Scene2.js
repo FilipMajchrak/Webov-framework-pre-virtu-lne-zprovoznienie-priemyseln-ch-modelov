@@ -252,6 +252,15 @@ Scene2.prototype.initScene = function ()
   });
   this.updatables.push(() => this.raySensor3.update());
 
+  this.box1 = createOpenBox({
+    scene: this.scene,
+    position: [-0.5, 12, -11],
+    size: [3, 2.5, 3],
+    wallThickness: 0.1,
+    color: 0x8b5a2b,
+    mass: 2
+  }, 'box1');
+  this.movingBodies.push(this.box1.body);
   
 
   // Hlavný update blok – logika scény
@@ -273,6 +282,7 @@ Scene2.prototype.initScene = function ()
     }
 
     updateDetectedObjectsMovement();
+    this.box1.update();
   });
 };
 

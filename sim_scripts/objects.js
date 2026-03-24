@@ -244,3 +244,116 @@ function createFallingSphere({scene,position = [0, 20, 0],rotation = [0, 0, 0],r
 
   return { mesh: visual, body: collider };
 }
+
+
+function createOpenBox({scene,position = [0, 0, 0],rotation = [0, 0, 0],size = [10, 5, 10],wallThickness = 0.3,color = 0x888888,mass = 1,friction = 0.8,restitution = 0.2},name = '')
+{
+  const [width, height, depth] = size;
+
+  const visualMaterial = new THREE.MeshStandardMaterial({ color });
+  const physMaterial = Physijs.createMaterial(
+    new THREE.MeshStandardMaterial({ visible: false }),
+    friction,
+    restitution
+  );
+
+  const mergedVisual = new THREE.Geometry();
+  const mergedPhysics = new THREE.Geometry();
+
+  function addBox(partSize, localPosition)
+  {
+    const geom = new THREE.BoxGeometry(...partSize);
+    const mesh = new THREE.Mesh(geom);
+
+    mesh.position.set(...localPosition);
+    mesh.updateMatrix();
+
+    mergedVisual.merge(mesh.geometry, mesh.matrix);
+    mergedPhysics.merge(mesh.geometry, mesh.matrix);
+  }
+
+  // dno
+  addBox(
+    [width, wallThickness, depth],
+    [0, -height / 2 + wallThickness / 2, 0]
+  );
+
+  // ľavá stena
+  addBox(
+    [wallThickness, height, depth],
+    [-width / 2 + wallThickness / 2, 0, 0]
+  );
+
+  // pravá stena
+  addBox(
+    [wallThickness, height, depth],
+    [width / 2 - wallThickness / 2, 0, 0]
+  );
+
+  // zadná stena
+  addBox(
+    [width, height, wallThickness],
+    [0, 0, -depth / 2 + wallThickness / 2]
+  );
+
+  // predná stena
+  addBox(
+    [width, height, wallThickness],
+    [0, 0, depth / 2 - wallThickness / 2]
+  );
+
+  mergedVisual.mergeVertices();
+  mergedVisual.computeFaceNormals();
+  mergedVisual.computeVertexNormals();
+
+  mergedPhysics.mergeVertices();
+  mergedPhysics.computeFaceNormals();
+  mergedPhysics.computeVertexNormals();
+
+  // vizuál
+  const visual = new THREE.Mesh(mergedVisual, visualMaterial);
+  visual.position.set(...position);
+  visual.rotation.set(
+    degToRad(rotation[0]),
+    degToRad(rotation[1]),
+    degToRad(rotation[2])
+  );
+  visual.name = name + '_Visual';
+  scene.add(visual);
+
+  // fyzika
+  const body = new Physijs.ConcaveMesh(
+    mergedPhysics,
+    physMaterial,
+    mass
+  );
+
+  body.position.set(...position);
+  body.rotation.set(
+    degToRad(rotation[0]),
+    degToRad(rotation[1]),
+    degToRad(rotation[2])
+  );
+  body.name = name || 'openBox';
+  body.setAngularFactor(new THREE.Vector3(0, 0, 0));
+
+  body.userData.syncVisual = () =>
+  {
+    visual.position.copy(body.position);
+    visual.quaternion.copy(body.quaternion);
+  };
+
+  body.userData.detectionTarget = visual;
+
+  scene.add(body);
+
+  showHitbox(visual, scene, body);
+
+  body.userData.syncVisual();
+
+  return {
+    mesh: visual,
+    body: body,
+    update: body.userData.syncVisual
+  };
+}
