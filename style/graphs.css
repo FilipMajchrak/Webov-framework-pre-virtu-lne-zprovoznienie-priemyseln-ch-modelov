@@ -1,6 +1,38 @@
+html,
 body {
-  height: 100vh;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.graphs-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  padding: 12px;
+  box-sizing: border-box;
+  background: inherit;
+  color: inherit;
+}
+
+.graph-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.graph-half {
+  flex: 1;
+  min-width: 0;
+}
+
+hr {
+  margin: 20px 0;
 }
 
 .graph-container {
@@ -13,28 +45,7 @@ body {
   height: 100% !important;
 }
 
-/* =========================
-   LIGHT THEME – GRAPHS
-   ========================= */
-
-body.theme-light .graph-card
-{
-  background: #ffffff;
-  border: 1px solid #ddd;
-}
-
-body.theme-light .graph-card h6
-{
-  color: #111;
-}
-
-body.theme-light .graph-container
-{
-  background: #ffffff;
-}
-
-.graph-card
-{
+.graph-card {
   background: #252526;
   border: 1px solid #333;
   border-radius: 12px;
@@ -42,20 +53,46 @@ body.theme-light .graph-container
   color: #d4d4d4;
 }
 
-.graph-card h6
-{
+.graph-card h6 {
   margin-bottom: 0.75rem;
   color: inherit;
 }
 
-body.theme-light .graph-card
-{
+body.theme-light {
+  background: #f3f3f3 !important;
+  color: #111 !important;
+}
+
+body.theme-light .graphs-wrapper {
+  background: #f3f3f3 !important;
+  color: #111 !important;
+}
+
+body.theme-light .graph-card {
   background: #ffffff !important;
   border: 1px solid #ddd !important;
   color: #111 !important;
 }
 
-body.theme-light hr
-{
+body.theme-light .graph-card h6 {
+  color: #111 !important;
+}
+
+body.theme-light .graph-container {
+  background: #ffffff !important;
+}
+
+body.theme-light .graph-container canvas {
+  background: #ffffff !important;
+}
+
+body.theme-light hr {
   border-color: #ccc !important;
+}
+
+@media (max-width: 991.98px) {
+  .graph-row {
+    flex-direction: column;
+    gap: 16px;
+  }
 }
