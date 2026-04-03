@@ -1,5 +1,5 @@
 const MEASURE_ENABLED = false;
-const MEASURE_LIMIT = 100;
+const MEASURE_LIMIT = 500;
 
 const measurement =
 {
