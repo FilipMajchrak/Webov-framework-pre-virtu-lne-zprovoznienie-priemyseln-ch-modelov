@@ -1,3 +1,20 @@
+const MEASURE_ENABLED = false;
+const MEASURE_LIMIT = 100;
+
+const measurement =
+{
+    rows: [],
+    tickTimestamps: [],
+    finished: false,
+
+    latestFps: null,
+    latestModbus: null,
+    latestRender: null,
+    latestTick: null,
+    lastJitter: 0
+};
+
+
 function isLightTheme()
 {
     return document.body.classList.contains("theme-light");
@@ -55,6 +72,7 @@ window.fpsChart = null;
 window.modbusChart = null;
 window.tickChart = null;
 window.renderChart = null;
+window.jitterChart = null;
 
 window.digitalInChart = null;
 window.digitalOutChart = null;
@@ -614,11 +632,13 @@ function initStaticCharts()
     destroyChart("modbusChart");
     destroyChart("tickChart");
     destroyChart("renderChart");
+    destroyChart("jitterChart");
 
     window.fpsChart = createSingleValueChart("fpsChart", "FPS", "lime");
     window.modbusChart = createSingleValueChart("modbusChart", "Modbus odozva [ms]", "orange");
     window.tickChart = createSingleValueChart("tickChart", "t[ms]", "red");
-    window.renderChart = createSingleValueChart("renderChart","Render time [ms]","cyan",{min:0,max:20});
+    window.renderChart = createSingleValueChart("renderChart", "Render time [ms]", "cyan", { min: 0, max: 20 });
+    window.jitterChart = createSingleValueChart("jitterChart", "Jitter [ms]", "magenta", { min: 0 });
 }
 
 function refreshChartsForTheme()
@@ -626,6 +646,9 @@ function refreshChartsForTheme()
     const fpsSnapshot = cloneChartData(window.fpsChart);
     const modbusSnapshot = cloneChartData(window.modbusChart);
     const tickSnapshot = cloneChartData(window.tickChart);
+    const renderSnapshot = cloneChartData(window.renderChart);
+    const jitterSnapshot = cloneChartData(window.jitterChart);
+
     const digitalInSnapshot = cloneChartData(window.digitalInChart);
     const digitalOutSnapshot = cloneChartData(window.digitalOutChart);
     const analogInSnapshot = cloneChartData(window.analogInChart);
@@ -635,6 +658,8 @@ function refreshChartsForTheme()
     restoreChartData(window.fpsChart, fpsSnapshot);
     restoreChartData(window.modbusChart, modbusSnapshot);
     restoreChartData(window.tickChart, tickSnapshot);
+    restoreChartData(window.renderChart, renderSnapshot);
+    restoreChartData(window.jitterChart, jitterSnapshot);
 
     if (window.digitalInputPaths.length > 0 || window.digitalOutputPaths.length > 0)
     {
@@ -699,34 +724,34 @@ function handleSceneIO(data)
     pushAnalogData(window.analogInChart, window.analogInputPaths, data.IO, timeLabel);
     pushAnalogData(window.analogOutChart, window.analogOutputPaths, data.IO, timeLabel);
 }
-
 function handleMessage(event)
 {
     const data = event.data;
-    //console.log("GRAPH MESSAGE:", event.data);
 
     if (!data)
     {
         return;
     }
 
+    const timeLabel = data.time ?? new Date().toLocaleTimeString();
+
     if (data.type === "fps")
     {
-        pushSingleValue(
-            window.fpsChart,
-            data.value,
-            data.time ?? new Date().toLocaleTimeString()
-        );
+        const fpsValue = Number(data.value) || 0;
+
+        measurement.latestFps = fpsValue;
+
+        pushSingleValue(window.fpsChart, fpsValue, timeLabel);
         return;
     }
 
     if (data.type === "modbus")
     {
-        pushSingleValue(
-            window.modbusChart,
-            data.value,
-            data.time ?? new Date().toLocaleTimeString()
-        );
+        const modbusValue = Number(data.value) || 0;
+
+        measurement.latestModbus = modbusValue;
+
+        pushSingleValue(window.modbusChart, modbusValue, timeLabel);
         return;
     }
 
@@ -739,25 +764,95 @@ function handleMessage(event)
     if (data.type === "DataIOScene")
     {
         handleSceneIO(data);
-    }
-
-    if (data.type === "system")
-    {
-        pushSingleValue(
-            window.tickChart,
-            data.stats.tickDurationMs,
-            data.time ?? new Date().toLocaleTimeString()
-        );
         return;
     }
 
     if (data.type === "render")
     {
-        pushSingleValue(
-            window.renderChart,
-            data.value,
-            data.time ?? new Date().toLocaleTimeString()
-        );
+        const renderValue = Number(data.value) || 0;
+
+        measurement.latestRender = renderValue;
+
+        pushSingleValue(window.renderChart, renderValue, timeLabel);
+        return;
+    }
+
+    if (data.type === "system")
+    {
+        const tickValue = Number(data.stats.tickDurationMs) || 0;
+        const now = performance.now();
+
+        measurement.latestTick = tickValue;
+
+        pushSingleValue(window.tickChart, tickValue, timeLabel);
+
+        measurement.tickTimestamps.push(now);
+
+        let currentJitter = 0;
+
+        if (measurement.tickTimestamps.length >= 2)
+        {
+            const len = measurement.tickTimestamps.length;
+            const currentInterval = measurement.tickTimestamps[len - 1] - measurement.tickTimestamps[len - 2];
+
+            if (len >= 3)
+            {
+                const previousInterval = measurement.tickTimestamps[len - 2] - measurement.tickTimestamps[len - 3];
+                currentJitter = Math.abs(currentInterval - previousInterval);
+            }
+        }
+
+        measurement.lastJitter = currentJitter;
+
+        pushSingleValue(window.jitterChart, currentJitter, timeLabel);
+
+        if (MEASURE_ENABLED && !measurement.finished)
+        {
+            measurement.rows.push(
+            {
+                index: measurement.rows.length + 1,
+                time: now,
+                fps: measurement.latestFps ?? "",
+                render: measurement.latestRender ?? "",
+                modbus: measurement.latestModbus ?? "",
+                tick: tickValue,
+                jitter: currentJitter
+            });
+
+            if (measurement.rows.length % 10 === 0)
+            {
+                printProgress(measurement.rows.length, MEASURE_LIMIT);
+            }
+
+            if (measurement.rows.length >= MEASURE_LIMIT)
+            {
+                measurement.finished = true;
+
+                const fpsValues = measurement.rows.map((row) => Number(row.fps)).filter((value) => Number.isFinite(value));
+                const modbusValues = measurement.rows.map((row) => Number(row.modbus)).filter((value) => Number.isFinite(value));
+                const tickValues = measurement.rows.map((row) => Number(row.tick)).filter((value) => Number.isFinite(value));
+                const renderValues = measurement.rows.map((row) => Number(row.render)).filter((value) => Number.isFinite(value));
+
+                const avg = (arr) =>
+                {
+                    if (!arr.length) return 0;
+                    return arr.reduce((a, b) => a + b, 0) / arr.length;
+                };
+
+                const totalJitter = computeJitter(measurement.tickTimestamps);
+
+                console.log("Meranie dokončené");
+                console.log("Počet vzoriek:", measurement.rows.length);
+                console.log("FPS avg:", avg(fpsValues));
+                console.log("Modbus avg [ms]:", avg(modbusValues));
+                console.log("Tick avg [ms]:", avg(tickValues));
+                console.log("Render avg [ms]:", avg(renderValues));
+                console.log("Celkový jitter [ms]:", totalJitter);
+
+                downloadCSV();
+            }
+        }
+
         return;
     }
 }
@@ -789,3 +884,67 @@ window.addEventListener("load", () =>
     console.log("Digital + Analog IN/OUT graph pripravený");
 });
 
+function computeJitter(times)
+{
+    if (times.length < 2) return 0;
+
+    let diffs = [];
+
+    for (let i = 1; i < times.length; i++)
+    {
+        diffs.push(times[i] - times[i - 1]);
+    }
+
+    const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+
+    const variance = diffs.reduce((sum, val) =>
+    {
+        return sum + Math.pow(val - avg, 2);
+    }, 0) / diffs.length;
+
+    return Math.sqrt(variance);
+}
+
+function downloadCSV()
+{
+    let csv = "index,time_ms,fps,render_ms,modbus_delay_ms,tick_ms,jitter_ms\n";
+
+    for (let i = 0; i < measurement.rows.length; i++)
+    {
+        const row = measurement.rows[i];
+
+        csv += [
+            row.index,
+            row.time,
+            row.fps,
+            row.render,
+            row.modbus,
+            row.tick,
+            row.jitter
+        ].join(",") + "\n";
+    }
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "measurement.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+    console.log("CSV uložené");
+}
+
+function printProgress(current, total)
+{
+    const width = 20; // šírka baru
+    const percent = current / total;
+    const filled = Math.round(width * percent);
+
+    const bar = "█".repeat(filled) + "-".repeat(width - filled);
+    const percentText = (percent * 100).toFixed(1);
+
+    console.log(`[${bar}] ${current}/${total} (${percentText}%)`);
+}
